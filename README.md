@@ -192,7 +192,7 @@ This layered approach means no single failure compromises the environment. If Au
 ### ✅ Full-Stack Observability
 **Stack:** Telegraf → InfluxDB 2.x (Flux) → Grafana → Discord alerts  
 **Evidence:** 10-second metric granularity across all 3 nodes. This pipeline was the sole reason a hard lockup root cause analysis was possible when all local logs were destroyed.  
-**Deep dive:** [VFIO Lockup Forensics →](https://github.com/yourname/technical-writeups/tree/main/proxmox-vfio-lockup-forensics)
+**Deep dive:** [VFIO Lockup Forensics →](https://github.com/timanlemvo/technical-writeups/tree/main/proxmox-vfio-lockup-forensics)
 
 ### ✅ Network Segmentation
 **Stack:** UniFi Dream Machine + 4 VLANs  
