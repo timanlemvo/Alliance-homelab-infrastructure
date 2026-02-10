@@ -230,7 +230,7 @@ Each project folder contains:
 
 Real incidents diagnosed and resolved on this infrastructure:
 
-### [Diagnosing a Silent Hard Lockup on a Proxmox VFIO Passthrough Node](https://github.com/yourname/technical-writeups/tree/main/proxmox-vfio-lockup-forensics)
+### [Diagnosing a Silent Hard Lockup on a Proxmox VFIO Passthrough Node](https://github.com/timanlemvo/technical-writeups/tree/main/proxmox-vfio-lockup-forensics)
 
 Node-A (Millennium Falcon) suffered a complete hard lockup with zero local crash artifacts — no kernel panic, no pstore dump, no journal entries — because `log2ram` held all logs in RAM and the instantaneous failure prevented a sync to disk. By pivoting to externally-stored Telegraf metrics in InfluxDB, I reconstructed a second-by-second timeline using Flux queries, systematically eliminated every software cause (CPU idle at 99.8%, memory at 7.4%, zero network errors), and traced the failure to a PCIe bus stall from the NVIDIA GPU under VFIO passthrough. Applied kernel parameter mitigations (`pcie_aspm=off`, `pci=noaer`), disabled `log2ram`, and the node has been stable since.
 
