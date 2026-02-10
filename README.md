@@ -188,7 +188,7 @@ This layered approach means no single failure compromises the environment. If Au
 **Stack:** Authentik → OIDC/SAML → 15+ services, MFA enforced (TOTP + WebAuthn)  
 **Evidence:** Reduced password surface from 12+ credentials per user to 1 SSO login. 100% MFA coverage. Complete login audit trail forwarded to Wazuh.  
 **Deep dive:** [Zero-Trust Identity Platform →](projects/identity-access/)
-
+ 
 ### ✅ Full-Stack Observability
 **Stack:** Telegraf → InfluxDB 2.x (Flux) → Grafana → Discord alerts  
 **Evidence:** 10-second metric granularity across all 3 nodes. This pipeline was the sole reason a hard lockup root cause analysis was possible when all local logs were destroyed.  
