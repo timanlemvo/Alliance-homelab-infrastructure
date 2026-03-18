@@ -24,9 +24,9 @@ Tantive-III is a dedicated VM on Node-A (Millennium Falcon) with an NVIDIA RTX 4
 
 Read in order:
 
-1. **[PROBLEM.md](PROBLEM.md)**  Why the platform exists: idle GPU, API costs, privacy concerns, and the inference gap in the fleet.
-2. **[TRADEOFFS.md](TRADEOFFS.md)**  What was gained and sacrificed: cloud vs. local calculus, VFIO lockup incidents, VRAM budgeting, operational overhead, and when to reconsider.
-3. **[IMPLEMENTATION.md](IMPLEMENTATION.md)**  How it was built: VFIO setup, VM deployment, docker-compose.yml, model installation, ComfyUI stability rules, and testing.
+1. **[PROBLEM](PROBLEM.md)**  Why the platform exists: idle GPU, API costs, privacy concerns, and the inference gap in the fleet.
+2. **[TRADEOFFS](TRADEOFFS.md)**  What was gained and sacrificed: cloud vs. local calculus, VFIO lockup incidents, VRAM budgeting, operational overhead, and when to reconsider.
+3. **[IMPLEMENTATION](IMPLEMENTATION.md)**  How it was built: VFIO setup, VM deployment, docker-compose.yml, model installation, ComfyUI stability rules, and testing.
 
 ## Current Models
 
