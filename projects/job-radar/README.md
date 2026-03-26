@@ -26,8 +26,8 @@ Jobs appear in Discord as rich embeds:
 ┌─────────────────────────────────────────────┐
 │ Senior DevOps Engineer                      │
 ├─────────────────────────────────────────────┤
-│ 🏢 Company     │ 📍 Location    │ 💰 Salary │
-│ Acme Corp     │ Los Angeles, CA│ $150-180K │
+│ 🏢 Company   │ 📍 Location │ 💰 Salary     │
+│ Acme Corp    │ Los Angeles, CA│ $150-180K   │ 
 ├─────────────────────────────────────────────┤
 │ Job Radar                                   │
 └─────────────────────────────────────────────┘
@@ -99,19 +99,19 @@ Click on the **Search Config** node to modify:
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   Schedule   │────▶│ Split Titles │────▶│    Wait      │
+│   Schedule   │────▶│ Split Titles │────▶│    Wait     │
 │  (6 hours)   │     │  (15 items)  │     │ (10 seconds) │
 └──────────────┘     └──────────────┘     └──────────────┘
                                                  │
                                                  ▼
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   Filter &   │◀────│  Split Jobs  │◀────│  JSearch     │
+│   Filter &   │◀────│  Split Jobs  │◀────│  JSearch    │
 │   Dedupe     │     │  (per title) │     │    API       │
 └──────────────┘     └──────────────┘     └──────────────┘
         │
         ▼
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│   Format     │────▶│    Wait      │────▶│   Discord    │
+│   Format     │────▶│    Wait      │────▶│   Discord   │
 │   Job Data   │     │ (5 seconds)  │     │   Webhook    │
 └──────────────┘     └──────────────┘     └──────────────┘
 ```
