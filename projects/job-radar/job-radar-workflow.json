@@ -1,0 +1,315 @@
+{
+  "name": "Job Radar - Automated Job Search Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Run Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "job-titles",
+              "name": "jobTitles",
+              "value": "=[\"Cloud Engineer\", \"Cloud Infrastructure Engineer\", \"DevOps Engineer\", \"IAM Engineer\", \"Identity Engineer\", \"Platform Engineer\", \"Systems Engineer\", \"Infrastructure Engineer\", \"IT Systems Engineer\", \"Security Engineer\", \"Automation Engineer\", \"Azure Administrator\", \"Azure Engineer\", \"SRE\", \"Site Reliability Engineer\"]",
+              "type": "array"
+            },
+            {
+              "id": "location",
+              "name": "location",
+              "value": "Los Angeles, CA",
+              "type": "string"
+            },
+            {
+              "id": "radius",
+              "name": "radius",
+              "value": "30",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "search-config",
+      "name": "Search Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "jobTitles",
+        "options": {}
+      },
+      "id": "split-job-titles",
+      "name": "Split Job Titles",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "id": "wait-before-api",
+      "name": "Wait (10 seconds)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [660, 0],
+      "webhookId": "api-rate-limit"
+    },
+    {
+      "parameters": {
+        "url": "https://jsearch.p.rapidapi.com/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.jobTitles }} in {{ $('Search Config').item.json.location }}"
+            },
+            {
+              "name": "page",
+              "value": "1"
+            },
+            {
+              "name": "num_pages",
+              "value": "1"
+            },
+            {
+              "name": "date_posted",
+              "value": "today"
+            },
+            {
+              "name": "radius",
+              "value": "={{ $('Search Config').item.json.radius }}"
+            },
+            {
+              "name": "remote_jobs_only",
+              "value": "false"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-RapidAPI-Host",
+              "value": "jsearch.p.rapidapi.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "jsearch-api",
+      "name": "JSearch API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "split-jobs",
+      "name": "Split Jobs",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-job-id",
+              "leftValue": "={{ $json.job_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-valid-jobs",
+      "name": "Filter Valid Jobs",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "operation": "removeDuplicates",
+        "compare": "selectedFields",
+        "fieldsToCompare": "job_id",
+        "options": {}
+      },
+      "id": "remove-duplicates",
+      "name": "Remove Duplicates",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3.1,
+      "position": [1540, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "job-id",
+              "name": "job_id",
+              "value": "={{ $json.job_id }}",
+              "type": "string"
+            },
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.job_title }}",
+              "type": "string"
+            },
+            {
+              "id": "company",
+              "name": "company",
+              "value": "={{ $json.employer_name }}",
+              "type": "string"
+            },
+            {
+              "id": "location",
+              "name": "location",
+              "value": "={{ $json.job_city }}, {{ $json.job_state }}",
+              "type": "string"
+            },
+            {
+              "id": "remote",
+              "name": "remote",
+              "value": "={{ $json.job_is_remote ? 'Remote' : 'On-site' }}",
+              "type": "string"
+            },
+            {
+              "id": "salary",
+              "name": "salary",
+              "value": "={{ $json.job_min_salary && $json.job_max_salary ? '$' + $json.job_min_salary.toLocaleString() + ' - $' + $json.job_max_salary.toLocaleString() : 'Not listed' }}",
+              "type": "string"
+            },
+            {
+              "id": "url",
+              "name": "url",
+              "value": "={{ $json.job_apply_link }}",
+              "type": "string"
+            },
+            {
+              "id": "posted",
+              "name": "posted",
+              "value": "={{ $json.job_posted_at_datetime_utc }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-job-data",
+      "name": "Format Job Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1760, 0]
+    },
+    {
+      "parameters": {
+        "amount": 5
+      },
+      "id": "wait-before-discord",
+      "name": "Wait (5 seconds)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1980, 0],
+      "webhookId": "discord-rate-limit"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_DISCORD_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  embeds: [{\n    title: $json.title,\n    url: $json.url,\n    color: 36863,\n    fields: [\n      { name: \"🏢 Company\", value: $json.company || \"N/A\", inline: true },\n      { name: \"📍 Location\", value: $json.location || \"N/A\", inline: true },\n      { name: \"💰 Salary\", value: $json.salary || \"Not listed\", inline: true }\n    ],\n    footer: { text: \"Job Radar\" }\n  }]\n}) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 3000
+            }
+          }
+        }
+      },
+      "id": "post-to-discord",
+      "name": "Post to Discord",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2200, 0]
+    }
+  ],
+  "connections": {
+    "Run Every 6 Hours": {
+      "main": [[{"node": "Search Config", "type": "main", "index": 0}]]
+    },
+    "Search Config": {
+      "main": [[{"node": "Split Job Titles", "type": "main", "index": 0}]]
+    },
+    "Split Job Titles": {
+      "main": [[{"node": "Wait (10 seconds)", "type": "main", "index": 0}]]
+    },
+    "Wait (10 seconds)": {
+      "main": [[{"node": "JSearch API", "type": "main", "index": 0}]]
+    },
+    "JSearch API": {
+      "main": [[{"node": "Split Jobs", "type": "main", "index": 0}]]
+    },
+    "Split Jobs": {
+      "main": [[{"node": "Filter Valid Jobs", "type": "main", "index": 0}]]
+    },
+    "Filter Valid Jobs": {
+      "main": [[{"node": "Remove Duplicates", "type": "main", "index": 0}]]
+    },
+    "Remove Duplicates": {
+      "main": [[{"node": "Format Job Data", "type": "main", "index": 0}]]
+    },
+    "Format Job Data": {
+      "main": [[{"node": "Wait (5 seconds)", "type": "main", "index": 0}]]
+    },
+    "Wait (5 seconds)": {
+      "main": [[{"node": "Post to Discord", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {"name": "automation"},
+    {"name": "job-search"},
+    {"name": "discord"}
+  ]
+}

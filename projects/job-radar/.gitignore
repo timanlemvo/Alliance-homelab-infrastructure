@@ -1,0 +1,31 @@
+# Environment files
+.env
+.env.local
+*.env
+
+# Credentials (never commit these!)
+credentials.json
+*-credentials.json
+api-keys.txt
+
+# n8n local data
+.n8n/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
