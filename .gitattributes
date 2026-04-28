@@ -1,2 +1,6 @@
-# Auto detect text files and perform LF normalization
+# Normalize line endings
 * text=auto
+
+# Tell GitHub Linguist to ignore HTML files for language stats
+*.html linguist-detectable=false
+*.html linguist-documentation=true
