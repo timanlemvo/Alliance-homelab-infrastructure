@@ -1,14 +1,14 @@
 # Proxmox Homelab: Cloud, Security & Platform Engineering Lab
 
-Production-grade infrastructure running 25+ services across a 3-node cluster with zero-trust identity, security monitoring, full-stack observability, and GPU-accelerated AI workloads.
+Production-grade infrastructure running 25+ services across a 3-node cluster with zero-trust identity, security monitoring, full-stack observability, GPU-accelerated AI workloads, and hybrid Active Directory with Entra Connect sync.
 
 ---
 
 ## Overview
 
-This is a working simulation of enterprise infrastructure, built by applying lessons from 7 years managing 200+ users at Team Liquid, Stagwell, and CAA. Every design decision (VLAN segmentation, centralized identity, observability pipelines, threat detection) mirrors production standards implemented professionally.
+This is a working simulation of enterprise infrastructure, built by applying lessons from 7 years managing 200+ users at Team Liquid, Stagwell, and CAA. Every design decision (VLAN segmentation, centralized identity, observability pipelines, threat detection, hybrid identity) mirrors production standards implemented professionally.
 
-`Linux Administration` `Proxmox VE Clustering` `VLAN Segmentation` `Firewall Policy` `SIEM/XDR (Wazuh)` `SSO/IAM (Authentik)` `Observability (Telegraf → InfluxDB → Grafana)` `Zero-Trust (Tailscale)` `GPU Passthrough (VFIO/IOMMU)` `Reverse Proxy & TLS` `Threat Detection & Response` `Incident Forensics` `Infrastructure Documentation`
+`Linux Administration` `Proxmox VE Clustering` `Active Directory` `Hybrid Identity (Entra Connect)` `VLAN Segmentation` `Firewall Policy` `SIEM/XDR (Wazuh)` `SSO/IAM (Authentik)` `Observability (Telegraf → InfluxDB → Grafana)` `Zero-Trust (Tailscale)` `GPU Passthrough (VFIO/IOMMU)` `Reverse Proxy & TLS` `Threat Detection & Response` `Incident Forensics` `Infrastructure Documentation`
 
 ---
 
@@ -31,12 +31,14 @@ This is a working simulation of enterprise infrastructure, built by applying les
 │ ROLE: AI/ML Compute     │ ROLE: Data & Operations │ ROLE: Network & Security │
 │                         │                         │                          │
 │ ┌─────────────────────┐ │ ┌─────────────────────┐ │ ┌──────────────────────┐ │
-│ │ Tantive-III VM      │ │ │ PostgreSQL          │ │ │ Wazuh SIEM           │ │
-│ │ • Ollama LLM        │ │ │ n8n Automation      │ │ │ AdGuard DNS          │ │
-│ │ • OpenWebUI         │ │ │ Authentik SSO       │ │ │ Nginx Proxy Mgr      │ │
-│ │ • ComfyUI           │ │ │ InfluxDB            │ │ │ UptimeKuma           │ │
-│ │ • AnythingLLM       │ │ │ Grafana             │ │ └──────────────────────┘ │
-│ └─────────────────────┘ │ │ Vaultwarden         │ │                          │
+│ │ Tantive-III VM      │ │ │ ALLIANCE-DC01       │ │ │ Wazuh SIEM           │ │
+│ │ • Ollama LLM        │ │ │ (AD DS + DNS)       │ │ │ AdGuard DNS          │ │
+│ │ • OpenWebUI         │ │ │ PostgreSQL          │ │ │ Nginx Proxy Mgr      │ │
+│ │ • ComfyUI           │ │ │ n8n Automation      │ │ │ UptimeKuma           │ │
+│ │ • AnythingLLM       │ │ │ Authentik SSO       │ │ └──────────────────────┘ │
+│ └─────────────────────┘ │ │ InfluxDB            │ │                          │
+│                         │ │ Grafana             │ │                          │
+│                         │ │ Vaultwarden         │ │                          │
 │                         │ │ HomeAssistant       │ │                          │
 │                         │ │ Homepage            │ │                          │
 │                         │ └─────────────────────┘ │                          │
@@ -48,10 +50,10 @@ This is a working simulation of enterprise infrastructure, built by applying les
 | Node | Codename | Processor | Memory | Storage | Special Hardware |
 |------|----------|-----------|--------|---------|------------------|
 | Node-A | Millennium Falcon | Intel Core Ultra 9 | 64GB DDR5 | 2TB NVMe Gen4 | RTX 4000 Ada 20GB (VFIO passthrough) |
-| Node-B | CR90 Corvette | AMD Ryzen 7 PRO | 64GB DDR5 ECC | 4TB | ECC memory for data integrity |
+| Node-B | CR90 Corvette | AMD Ryzen 7 PRO | 64GB DDR5 ECC | 4TB | ECC memory for data integrity, hosts ALLIANCE-DC01 |
 | Node-C | Gozanti Cruiser | Intel i7-7700 | 32GB DDR4 | 512GB NVMe + 1TB SATA | 2.5GbE NIC hardware mod |
 
-Each node is purpose-built for its workload. Node-A carries the GPU for AI/ML inference. 20GB VRAM handles large parameter models. Node-B uses ECC memory because it runs the data pipeline where silent bit-flip corruption in time-series or authentication data would poison monitoring and identity. Node-C handles network-edge services and serves as the Tailscale subnet router, keeping the security control plane on a dedicated node.
+Each node is purpose-built for its workload. Node-A carries the GPU for AI/ML inference. 20GB VRAM handles large parameter models. Node-B uses ECC memory because it runs the data pipeline where silent bit-flip corruption in time-series or authentication data would poison monitoring and identity. It also hosts ALLIANCE-DC01: ECC RAM directly protects NTDS.dit from silent memory corruption, making it the right home for the domain controller. Node-C handles network-edge services and serves as the Tailscale subnet router, keeping the security control plane on a dedicated node.
 
 ---
 
@@ -64,15 +66,16 @@ Each node is purpose-built for its workload. Node-A carries the GPU for AI/ML in
 ║                            VLAN TOPOLOGY                                 ║
 ╠══════════════════════════════════════════════════════════════════════════╣
 ║                                                                          ║
-║  VLAN 10 - MANAGEMENT (192.168.1.0/24)                                   ║
+║  VLAN 10 - MANAGEMENT / TATOOINE (192.168.1.0/24)                        ║
 ║  ├─ 192.168.1.1   UniFi Dream Machine (Gateway/Firewall)                 ║
 ║  ├─ 192.168.1.2   UniFi US-8-150W (Switch)                               ║
 ║  ├─ 192.168.1.10  Node-A Proxmox (Millennium Falcon)                     ║
 ║  ├─ 192.168.1.11  Node-B Proxmox (CR90 Corvette)                         ║
 ║  ├─ 192.168.1.12  Node-C Proxmox (Gozanti Cruiser)                       ║
+║  ├─ 192.168.1.50  ALLIANCE-DC01 (Windows Server 2022, AD DS + DNS)       ║
 ║  └─ No DHCP, static assignments only                                     ║
 ║                                                                          ║
-║  VLAN 20 - SERVICES (192.168.20.0/24)                                    ║
+║  VLAN 20 - SERVICES / NABOO (192.168.20.0/24)                            ║
 ║  ├─ 192.168.20.10 Authentik SSO (PostgreSQL, Redis)                      ║
 ║  ├─ 192.168.20.20 Tantive-III VM (Ollama, OpenWebUI, ComfyUI)            ║
 ║  ├─ 192.168.20.30 Wazuh SIEM                                             ║
@@ -80,29 +83,36 @@ Each node is purpose-built for its workload. Node-A carries the GPU for AI/ML in
 ║  ├─ 192.168.20.41 InfluxDB                                               ║
 ║  ├─ 192.168.20.50 n8n Automation                                         ║
 ║  ├─ 192.168.20.51 Vaultwarden                                            ║
+║  ├─ 192.168.20.86 Canto-Bight (Windows 11 Pro, AD test workstation)      ║
 ║  └─ DHCP .100-.200 for future services                                   ║
 ║                                                                          ║
-║  VLAN 30 - IoT (192.168.30.0/24)                                         ║
+║  VLAN 30 - IoT / MUSTAFAR (192.168.30.0/24)                              ║
 ║  ├─ 192.168.30.10 HomeAssistant                                          ║
 ║  ├─ Smart home devices                                                   ║
 ║  └─ Isolated, cannot initiate to Management or Services                  ║
 ║                                                                          ║
-║  VLAN 40 - DMZ (192.168.40.0/24)                                         ║
+║  VLAN 40 - DMZ / SCARIF (192.168.40.0/24)                                ║
 ║  ├─ 192.168.40.10 Nginx Proxy Manager                                    ║
 ║  ├─ Public-facing ingress only                                           ║
+║  └─ No DHCP, static assignments only                                     ║
+║                                                                          ║
+║  VLAN 50 - BOT-NET / SECURITY SANDBOX (192.168.50.0/28)                  ║
+║  ├─ 192.168.50.10 Fulcrum VM204 (K-2SO Security Observer)                ║
+║  ├─ Triple isolation: no LAN, no internet, Discord webhooks only         ║
 ║  └─ No DHCP, static assignments only                                     ║
 ║                                                                          ║
 ╚══════════════════════════════════════════════════════════════════════════╝
 ```
 
-| VLAN | Name | Subnet | Gateway | DHCP | Purpose |
-|------|------|--------|---------|------|---------|
-| 10 | Management | 192.168.1.0/24 | 192.168.1.1 | Disabled | Hypervisor & infrastructure management |
-| 20 | Services | 192.168.20.0/24 | 192.168.20.1 | .100-.200 | Application workloads |
-| 30 | IoT | 192.168.30.0/24 | 192.168.30.1 | .100-.200 | Smart home, fully isolated |
-| 40 | DMZ | 192.168.40.0/24 | 192.168.40.1 | Disabled | Public-facing reverse proxy |
+| VLAN | Codename | Name | Subnet | Gateway | DHCP | Purpose |
+|------|----------|------|--------|---------|------|---------|
+| 10 | Tatooine | Management | 192.168.1.0/24 | 192.168.1.1 | Disabled | Hypervisor & infrastructure management |
+| 20 | Naboo | Services | 192.168.20.0/24 | 192.168.20.1 | .100-.200 | Application workloads |
+| 30 | Mustafar | IoT | 192.168.30.0/24 | 192.168.30.1 | .100-.200 | Smart home, fully isolated |
+| 40 | Scarif | DMZ | 192.168.40.0/24 | 192.168.40.1 | Disabled | Public-facing reverse proxy |
+| 50 | Bot-Net | Security Sandbox | 192.168.50.0/28 | 192.168.50.1 | Disabled | K-2SO triple isolation (Fulcrum VM204) |
 
-DHCP is disabled on Management and DMZ. Management contains hypervisor interfaces. Unauthorized access means full infrastructure compromise. DMZ is the external attack surface. Every host must be explicitly provisioned.
+DHCP is disabled on Management, DMZ, and Bot-Net. Management contains hypervisor interfaces. Unauthorized access means full infrastructure compromise. DMZ is the external attack surface. Bot-Net is a triple-isolated sandbox for K-2SO: no LAN access, no internet, Discord webhooks only. Every host on these VLANs must be explicitly provisioned.
 
 IoT is fully isolated. Consumer IoT devices are notoriously insecure. VLAN 30 can reach the internet but cannot initiate connections to Management or Services.
 
@@ -125,13 +135,13 @@ Internet
 UniFi Dream Machine (firewall, threat management, inter-VLAN routing)
   │
   ▼
-VLAN 40 --- Nginx Proxy Manager (TLS termination, rate limiting)
+VLAN 40 / Scarif --- Nginx Proxy Manager (TLS termination, rate limiting)
   │
   ▼
-VLAN 20 --- Authentik (SSO challenge, MFA, policy evaluation)
+VLAN 20 / Naboo --- Authentik (SSO challenge, MFA, policy evaluation)
   │
   ▼
-VLAN 20 --- Backend Service (Grafana, n8n, OpenWebUI, etc.)
+VLAN 20 / Naboo --- Backend Service (Grafana, n8n, OpenWebUI, etc.)
 ```
 
 ### Remote Access: Tailscale
@@ -169,6 +179,14 @@ Layer 10 - MONITORING:   Telegraf → InfluxDB → Grafana + UptimeKuma
 ---
 
 ## Implemented Capabilities
+
+### Hybrid Active Directory & Identity
+
+**Stack:** Windows Server 2022 (AD DS) → Entra Connect → Azure AD (Password Hash Sync)
+
+Domain controller (`ALLIANCE-DC01`) built from scratch on Node-B (ECC RAM for NTDS.dit integrity). Forest `alliance.lab` with full OU structure, cascading GPO inheritance, and break/fix scenario testing. Entra Connect configured with Password Hash Sync syncing identities to an existing Azure tenant, closing the on-prem to cloud identity loop. Domain-joined Windows 11 Pro workstation (Canto-Bight) used for end-to-end GPO validation. Includes a full troubleshooting arc: Server Core vs Desktop Experience root cause diagnosis, VM rebuild decision, cross-VLAN domain join DNS fix, and Proxmox migration CD/DVD blocker resolution.
+
+[Active Directory Hybrid Identity Lab →](projects/active-directory-lab/)
 
 ### Security Monitoring & Threat Detection
 
@@ -220,9 +238,12 @@ Event-driven alerting, infrastructure notifications to Discord, HomeAssistant in
 
 | Project | Problem Solved | Tech | Evidence |
 |---------|----------------|------|----------|
-| [SIEM Pipeline](projects/security-monitoring/) | Manual threat monitoring doesn't scale | Wazuh + n8n + Discord | Automated detection and alerting, prior auto-blocking |
+| [Active Directory Hybrid Identity Lab](projects/active-directory-lab/) | No on-prem AD or hybrid identity in the fleet | Windows Server 2022, AD DS, GPO, Entra Connect, PHS | Domain controller, cascading GPOs, domain-joined Win11 workstation, Azure sync |
 | [Zero-Trust Identity](projects/identity-access/) | Password sprawl, no MFA | Authentik OIDC/SAML | 15+ services, 100% MFA, full audit trail |
+| [SIEM Pipeline](projects/security-monitoring/) | Manual threat monitoring doesn't scale | Wazuh + n8n + Discord | Automated detection and alerting, prior auto-blocking |
 | [GPU AI Platform](projects/ai-platform/) | Local LLM inference | Ollama + RTX 4000 Ada | On-device inference, RAG pipeline in progress |
+| [Job Radar](projects/job-radar/) | Manual job searching across multiple platforms | n8n, LinkedIn API, Indeed API, 3+ APIs, Discord embeds | Automated job discovery pipeline with deduplication and real-time Discord delivery |
+| [BD-1 Discord Assistant](projects/bd1-job-tracker/) | Fragmented tooling for job search, cert study, and project tracking | BD-1 bot, PostgreSQL, AnythingLLM, n8n, Discord | Feature module expanding BD-1 with project tracking, cert study commands, and job search integration |
 | [VFIO Lockup Forensics](https://github.com/timanlemvo/technical-writeups/tree/main/proxmox-vfio-lockup-forensics) | Silent host crash, zero local logs | Telegraf + InfluxDB + Flux | Root cause found via external telemetry alone |
 
 ---
@@ -239,8 +260,9 @@ Node-A (Millennium Falcon) suffered a complete hard lockup with zero local crash
 
 | Homelab Capability | Enterprise Equivalent | Role Relevance |
 |-------------------|----------------------|----------------|
-| Wazuh SIEM + n8n alerting | Splunk / Sentinel / QRadar | Security Engineer, SOC |
+| AD DS + Entra Connect + GPO | On-prem AD synced to Azure AD | Cloud Engineer, IAM Engineer, Sysadmin |
 | Authentik SSO + MFA | Okta / Azure AD / Ping | Identity Engineer, Security |
+| Wazuh SIEM + n8n alerting | Splunk / Sentinel / QRadar | Security Engineer, SOC |
 | Grafana + Telegraf + InfluxDB | Datadog / New Relic / Prometheus | SRE, Platform Engineering |
 | VLAN segmentation + UDM firewall | Cisco / Palo Alto / Fortinet | Network Engineer, Cloud Security |
 | Proxmox 3-node cluster | VMware / Hyper-V / Nutanix | Systems Engineer, Virtualization |
@@ -255,7 +277,9 @@ Node-A (Millennium Falcon) suffered a complete hard lockup with zero local crash
 ### Implemented
 
 - 3-node Proxmox cluster with corosync quorum
-- 4-VLAN segmentation (Management, Services, IoT, DMZ)
+- 5-VLAN segmentation (Management/Tatooine, Services/Naboo, IoT/Mustafar, DMZ/Scarif, Security Sandbox/Bot-Net)
+- Active Directory domain controller (ALLIANCE-DC01) on Node-B with cascading GPOs and break/fix testing
+- Entra Connect hybrid identity sync (Password Hash Sync) to Azure tenant
 - Centralized SSO via Authentik with MFA enforcement across 15+ services
 - Wazuh SIEM deployed with detection rules, FIM, and log aggregation
 - Full observability pipeline (Telegraf → InfluxDB → Grafana)
@@ -272,6 +296,7 @@ Node-A (Millennium Falcon) suffered a complete hard lockup with zero local crash
 - Grafana dashboard buildout for cluster-wide visibility
 - Inter-VLAN firewall rule hardening
 - Tailscale ACL policy refinement
+- Second domain controller on Node-C for AD redundancy
 
 ### Planned
 
@@ -279,7 +304,7 @@ Node-A (Millennium Falcon) suffered a complete hard lockup with zero local crash
 |-----------|-----|
 | Proxmox Backup Server | Scheduled VM/CT snapshots with retention policies |
 | Offsite encrypted backups | B2 or S3-compatible replication for disaster recovery |
-| Kubernetes (k3s) on Node-B | Container orchestration beyond Docker Compose |
+| Kubernetes (k3s) cluster on Sentinel + Tydirium | Two Raspberry Pi 4B nodes dedicated to container orchestration — next portfolio milestone, in the pipeline |
 | Terraform for VM provisioning | Full IaC, GitOps workflow |
 | Grafana alerting rules | CPU, memory, disk, service availability thresholds |
 
@@ -289,37 +314,56 @@ Node-A (Millennium Falcon) suffered a complete hard lockup with zero local crash
 
 ```
 Alliance-homelab-infrastructure/
-├── README.md                         <- You are here
+├── README.md                              <- You are here
 ├── projects/
-│   ├── security-monitoring/          <- SIEM automation pipeline
+│   ├── active-directory-lab/              <- Hybrid AD + Entra Connect identity lab
+│   │   ├── README.md
+│   │   ├── docs/
+│   │   │   ├── PROBLEM.md
+│   │   │   ├── IMPLEMENTATION.md
+│   │   │   └── TRADEOFFS.md
+│   │   └── blog/
+│   │       └── active-directory-hybrid-identity-lab.md
+│   ├── security-monitoring/               <- SIEM automation pipeline
 │   │   ├── PROBLEM.md
 │   │   ├── IMPLEMENTATION.md
 │   │   ├── TRADEOFFS.md
 │   │   ├── wazuh/
 │   │   ├── n8n/
 │   │   └── docker-compose.yml
-│   ├── identity-access/              <- Zero-trust identity platform
+│   ├── identity-access/                   <- Zero-trust identity platform
 │   │   ├── PROBLEM.md
 │   │   ├── IMPLEMENTATION.md
 │   │   ├── TRADEOFFS.md
 │   │   ├── authentik/
 │   │   └── integrations/
-│   └── ai-platform/                  <- GPU AI/ML platform
-│       ├── PROBLEM.md
+│   ├── ai-platform/                       <- GPU AI/ML platform
+│   │   ├── PROBLEM.md
+│   │   ├── IMPLEMENTATION.md
+│   │   ├── TRADEOFFS.md
+│   │   ├── ollama/
+│   │   └── rag/
+│   ├── bd1-job-tracker/                   <- BD-1 Discord assistant feature expansion
+│   │   ├── PROBLEM.md
+│   │   ├── IMPLEMENTATION.md
+│   │   └── TRADEOFFS.md
+│   └── job-radar/                         <- Automated job discovery pipeline
+│       ├── PROBLEMS.md
 │       ├── IMPLEMENTATION.md
-│       ├── TRADEOFFS.md
-│       ├── ollama/
-│       └── rag/
+│       ├── CUSTOMIZATION.md
+│       ├── SETUP.md
+│       └── TRADEOFFS.md
 ├── docs/
-│   ├── ARCHITECTURE.md               <- Network & infrastructure deep dive
-│   ├── SECURITY.md                   <- Security design & policy documentation
-│   └── LESSONS.md                    <- Operational lessons learned
-├── configs/                          <- Sanitized configuration files
+│   ├── ARCHITECTURE.md                    <- Network & infrastructure deep dive
+│   ├── SECURITY.md                        <- Security design & policy documentation
+│   └── LESSONS.md                         <- Operational lessons learned
+├── configs/                               <- Sanitized configuration files
 │   ├── telegraf/
 │   ├── grub/
 │   └── vfio/
 └── blog/
-    └── from-jamf-to-proxmox.md       <- Career transition writeup
+    ├── from-jamf-to-proxmox.md            <- Career transition writeup
+    └── active-directory-hybrid-identity-lab.md <- AD lab build log
 ```
 
 ---
