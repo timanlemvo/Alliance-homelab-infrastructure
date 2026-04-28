@@ -1,0 +1,7 @@
+exclude:
+  - projects/job-radar/docs/CUSTOMIZATION.md
+  - projects/job-radar/docs/IMPLEMENTATION.md
+  - projects/job-radar/docs/SETUP.md
+  - projects/job-radar/docs/PROBLEMS.md
+  - projects/job-radar/docs/TRADEOFFS.md
+  - projects/job-radar/job-radar-workflow.json
