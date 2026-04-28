@@ -1,6 +1,6 @@
 # Building an Active Directory Lab from Scratch (And the Mistake That Made It Better)
 
-I needed to build an Active Directory environment fast. Not because I wanted to, exactly, but because I had a job interview coming up and my on-prem AD muscle had gone soft after three years managing Google Workspace and SaaS identity at Team Liquid. The interview was Wednesday. It was Monday.
+I needed to build an Active Directory environment fast. Not because I wanted to, exactly, but because I had a job interview coming up and my on-prem AD muscle had gone soft after three years managing Google Workspace and SaaS identity at Team Liquid. The interview was Wednesday. It was Sunday.
 
 This post covers what I built across two days, the mistake I made on day one that forced a full rebuild, and how the whole thing ended up as a working hybrid identity lab with cascading GPOs and Entra Connect syncing to Azure. It's part homelab build log, part honest account of what goes wrong when you're moving fast under pressure.
 
