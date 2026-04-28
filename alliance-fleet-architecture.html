@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alliance Fleet — Homelab System Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050810;
+    --bg2: #080d1a;
+    --bg3: #0d1526;
+    --grid: rgba(30,80,160,0.12);
+    --border: rgba(40,100,200,0.25);
+    --border-bright: rgba(80,160,255,0.5);
+    --text: #c8d8f0;
+    --text-dim: #6a88b0;
+    --text-bright: #e8f4ff;
+    --accent-blue: #4a9eff;
+    --accent-cyan: #00e5ff;
+    --accent-orange: #ff6b00;
+    --accent-green: #39ff85;
+    --accent-purple: #a855f7;
+    --accent-red: #ff3b5c;
+    --accent-yellow: #ffd600;
+
+    /* Service category colors */
+    --col-compute: #1a3a6e;
+    --col-compute-b: #2a5aae;
+    --col-identity: #3a1a6e;
+    --col-identity-b: #7a3aee;
+    --col-obs: #1a4a2e;
+    --col-obs-b: #2a9a5e;
+    --col-storage: #4a2a0e;
+    --col-storage-b: #ca7a2e;
+    --col-ai: #2a1a4e;
+    --col-ai-b: #7a4aee;
+    --col-security: #4a1a1a;
+    --col-security-b: #ee3a3a;
+    --col-network: #1a3a4a;
+    --col-network-b: #2a8aaa;
+    --col-automation: #1a4a3a;
+    --col-automation-b: #2aaa7a;
+    --col-bots: #3a2a1a;
+    --col-bots-b: #aa7a2a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 12px;
+    min-height: 100vh;
+    overflow-x: auto;
+  }
+
+  /* Starfield background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 8%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 25%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 75%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 92% 10%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 5% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 90%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 33% 70%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 78% 50%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 15% 55%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(2px 2px at 48% 33%, rgba(180,210,255,0.4) 0%, transparent 100%),
+      radial-gradient(2px 2px at 82% 88%, rgba(180,210,255,0.3) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Grid overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    width: 1400px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+    position: relative;
+  }
+
+  .header-eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-cyan);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.8;
+  }
+
+  .header h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--text-bright);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  .header h1 span {
+    color: var(--accent-orange);
+  }
+
+  .header-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    letter-spacing: 2px;
+  }
+
+  .header-line {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-blue), var(--accent-cyan), var(--accent-blue), transparent);
+    margin-top: 20px;
+    position: relative;
+  }
+
+  .header-line::before, .header-line::after {
+    content: '◆';
+    position: absolute;
+    top: -7px;
+    font-size: 8px;
+    color: var(--accent-cyan);
+  }
+  .header-line::before { left: calc(50% - 60px); }
+  .header-line::after { right: calc(50% - 60px); }
+
+  /* ── EXTERNAL ACCESS ── */
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* ── FLOW ROW ── */
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 28px;
+  }
+
+  .flow-node {
+    background: var(--bg3);
+    border: 1px solid var(--border-bright);
+    border-radius: 6px;
+    padding: 10px 14px;
+    text-align: center;
+    min-width: 110px;
+    position: relative;
+  }
+
+  .flow-node .fn-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .flow-node .fn-detail {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  .flow-arrow {
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+    position: relative;
+    min-width: 24px;
+  }
+
+  .flow-arrow::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: -4px;
+    border-left: 8px solid var(--accent-cyan);
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+  }
+
+  .flow-node.internet {
+    border-color: var(--accent-orange);
+    box-shadow: 0 0 12px rgba(255,107,0,0.2);
+  }
+  .flow-node.internet .fn-label { color: var(--accent-orange); }
+
+  .flow-note {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg2);
+    min-width: 180px;
+    line-height: 1.5;
+  }
+
+  /* ── GRID LAYOUTS ── */
+  .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .four-col { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .five-col { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+
+  /* ── NODE CARDS ── */
+  .node-card {
+    border-radius: 8px;
+    padding: 14px;
+    border: 1px solid var(--border-bright);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .node-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .node-card.node-a { background: linear-gradient(135deg, #0d1a33, #0a1525); }
+  .node-card.node-a::before { background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan)); }
+
+  .node-card.node-b { background: linear-gradient(135deg, #1a1a0a, #131308); }
+  .node-card.node-b::before { background: linear-gradient(90deg, var(--accent-yellow), var(--accent-orange)); }
+
+  .node-card.node-c { background: linear-gradient(135deg, #1a0a0a, #130808); }
+  .node-card.node-c::before { background: linear-gradient(90deg, var(--accent-red), #ff6b6b); }
+
+  .node-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+
+  .node-a .node-title { color: var(--accent-cyan); }
+  .node-b .node-title { color: var(--accent-yellow); }
+  .node-c .node-title { color: var(--accent-red); }
+
+  .node-subtitle {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+
+  .node-hw {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: 6px;
+    margin-bottom: 8px;
+  }
+
+  .node-ip {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-green);
+    background: rgba(57,255,133,0.07);
+    border: 1px solid rgba(57,255,133,0.2);
+    border-radius: 3px;
+    padding: 2px 6px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+
+  /* ── SERVICE CHIP ── */
+  .chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+  .chip {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+
+  .chip.compute    { background: rgba(26,58,110,0.6); border-color: #2a5aae; color: #7ab4ff; }
+  .chip.identity   { background: rgba(58,26,110,0.6); border-color: #7a3aee; color: #c07aff; }
+  .chip.obs        { background: rgba(26,74,46,0.6);  border-color: #2a9a5e; color: #6adfa0; }
+  .chip.storage    { background: rgba(74,42,14,0.6);  border-color: #ca7a2e; color: #ffaa60; }
+  .chip.ai         { background: rgba(42,26,78,0.6);  border-color: #7a4aee; color: #b07aff; }
+  .chip.security   { background: rgba(74,26,26,0.6);  border-color: #ee3a3a; color: #ff8080; }
+  .chip.network    { background: rgba(26,58,74,0.6);  border-color: #2a8aaa; color: #60ccee; }
+  .chip.automation { background: rgba(26,74,58,0.6);  border-color: #2aaa7a; color: #60ddaa; }
+  .chip.bots       { background: rgba(58,42,26,0.6);  border-color: #aa7a2a; color: #ddaa60; }
+  .chip.media      { background: rgba(58,26,58,0.6);  border-color: #aa2aaa; color: #ee80ee; }
+
+  /* ── SECTION PANELS ── */
+  .panel {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 14px;
+    position: relative;
+    top: -24px;
+    margin-bottom: -10px;
+    background: var(--bg);
+  }
+
+  .panel.compute { border-color: rgba(42,90,174,0.5); }
+  .panel.compute .panel-title { color: var(--accent-blue); border: 1px solid rgba(42,90,174,0.5); }
+
+  .panel.identity { border-color: rgba(122,58,238,0.5); }
+  .panel.identity .panel-title { color: var(--accent-purple); border: 1px solid rgba(122,58,238,0.5); }
+
+  .panel.obs { border-color: rgba(42,154,94,0.5); }
+  .panel.obs .panel-title { color: var(--accent-green); border: 1px solid rgba(42,154,94,0.5); }
+
+  .panel.security { border-color: rgba(238,58,58,0.5); }
+  .panel.security .panel-title { color: var(--accent-red); border: 1px solid rgba(238,58,58,0.5); }
+
+  .panel.network { border-color: rgba(42,138,170,0.4); }
+  .panel.network .panel-title { color: var(--accent-cyan); border: 1px solid rgba(42,138,170,0.4); }
+
+  .panel.automation { border-color: rgba(42,170,122,0.4); }
+  .panel.automation .panel-title { color: #2aaa7a; border: 1px solid rgba(42,170,122,0.4); }
+
+  .panel.ai { border-color: rgba(122,74,238,0.5); }
+  .panel.ai .panel-title { color: #b07aff; border: 1px solid rgba(122,74,238,0.5); }
+
+  .panel.bots { border-color: rgba(170,122,42,0.4); }
+  .panel.bots .panel-title { color: #ddaa60; border: 1px solid rgba(170,122,42,0.4); }
+
+  /* ── SERVICE ROWS ── */
+  .svc-row {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .svc-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .svc-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .svc-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .svc-row.cols-5 { grid-template-columns: 1fr 1fr 1fr 1fr 1fr; }
+  .svc-row.cols-6 { grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; }
+
+  .svc-box {
+    border-radius: 5px;
+    padding: 8px 10px;
+    border: 1px solid;
+  }
+
+  .svc-box .svc-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 8.5px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+
+  .svc-box .svc-detail {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    opacity: 0.7;
+    line-height: 1.4;
+  }
+
+  .svc-box.compute  { background: rgba(26,58,110,0.4); border-color: rgba(42,90,174,0.6); }
+  .svc-box.compute .svc-name { color: #7ab4ff; }
+
+  .svc-box.identity { background: rgba(58,26,110,0.4); border-color: rgba(122,58,238,0.6); }
+  .svc-box.identity .svc-name { color: #c07aff; }
+
+  .svc-box.obs      { background: rgba(26,74,46,0.4);  border-color: rgba(42,154,94,0.6); }
+  .svc-box.obs .svc-name { color: #6adfa0; }
+
+  .svc-box.storage  { background: rgba(74,42,14,0.4);  border-color: rgba(202,122,46,0.6); }
+  .svc-box.storage .svc-name { color: #ffaa60; }
+
+  .svc-box.ai       { background: rgba(42,26,78,0.4);  border-color: rgba(122,74,238,0.6); }
+  .svc-box.ai .svc-name { color: #b07aff; }
+
+  .svc-box.security { background: rgba(74,26,26,0.4);  border-color: rgba(238,58,58,0.6); }
+  .svc-box.security .svc-name { color: #ff8080; }
+
+  .svc-box.network  { background: rgba(26,58,74,0.4);  border-color: rgba(42,138,170,0.6); }
+  .svc-box.network .svc-name { color: #60ccee; }
+
+  .svc-box.automation { background: rgba(26,74,58,0.4); border-color: rgba(42,170,122,0.6); }
+  .svc-box.automation .svc-name { color: #60ddaa; }
+
+  .svc-box.bots     { background: rgba(58,42,26,0.4);  border-color: rgba(170,122,42,0.6); }
+  .svc-box.bots .svc-name { color: #ddaa60; }
+
+  .svc-box.media    { background: rgba(58,26,58,0.4);  border-color: rgba(170,42,170,0.6); }
+  .svc-box.media .svc-name { color: #ee80ee; }
+
+  /* ── VLAN ROW ── */
+  .vlan-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .vlan-box {
+    border-radius: 6px;
+    padding: 10px 12px;
+    border: 1px solid;
+    text-align: center;
+  }
+
+  .vlan-box .vlan-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+
+  .vlan-box .vlan-name {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 9px;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+
+  .vlan-box .vlan-cidr {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    opacity: 0.7;
+    margin-bottom: 4px;
+  }
+
+  .vlan-box .vlan-desc {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 7.5px;
+    opacity: 0.6;
+    line-height: 1.4;
+  }
+
+  .vlan-box.mgmt  { background: rgba(26,58,110,0.3); border-color: rgba(74,158,255,0.5); }
+  .vlan-box.mgmt .vlan-num  { color: var(--accent-blue); }
+  .vlan-box.mgmt .vlan-name { color: #7ab4ff; }
+
+  .vlan-box.svc   { background: rgba(26,74,46,0.3);  border-color: rgba(42,154,94,0.5); }
+  .vlan-box.svc .vlan-num   { color: var(--accent-green); }
+  .vlan-box.svc .vlan-name  { color: #6adfa0; }
+
+  .vlan-box.iot   { background: rgba(74,42,14,0.3);  border-color: rgba(202,122,46,0.5); }
+  .vlan-box.iot .vlan-num   { color: var(--accent-orange); }
+  .vlan-box.iot .vlan-name  { color: #ffaa60; }
+
+  .vlan-box.dmz   { background: rgba(58,26,110,0.3); border-color: rgba(122,58,238,0.5); }
+  .vlan-box.dmz .vlan-num   { color: var(--accent-purple); }
+  .vlan-box.dmz .vlan-name  { color: #c07aff; }
+
+  .vlan-box.botnet { background: rgba(26,58,74,0.3); border-color: rgba(42,138,170,0.5); }
+  .vlan-box.botnet .vlan-num  { color: var(--accent-cyan); }
+  .vlan-box.botnet .vlan-name { color: #60ccee; }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    border: 1px solid;
+  }
+
+  /* ── SECTION SEPARATOR ── */
+  .sep {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 24px 0 16px;
+  }
+
+  .sep-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .sep-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ── VM TABLE ── */
+  .vm-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 14px;
+  }
+
+  .vm-table th {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .vm-table td {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text);
+    padding: 5px 8px;
+    border-bottom: 1px solid rgba(40,100,200,0.1);
+    vertical-align: top;
+  }
+
+  .vm-table tr:hover td { background: rgba(40,100,200,0.05); }
+
+  .vm-id { color: var(--text-dim); }
+  .vm-name { color: var(--accent-cyan); font-weight: 600; }
+  .vm-ip { color: var(--accent-green); }
+  .vm-role { color: var(--text); }
+  .vm-res { color: var(--text-dim); }
+
+  /* ── FOOTER ── */
+  .footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-left {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .footer-right {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-align: right;
+  }
+
+  .glow-text {
+    color: var(--accent-cyan);
+    text-shadow: 0 0 8px rgba(0,229,255,0.5);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 8px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    border: 1px solid;
+  }
+
+  .badge.online  { background: rgba(57,255,133,0.1); border-color: rgba(57,255,133,0.4); color: var(--accent-green); }
+  .badge.pending { background: rgba(255,214,0,0.1);  border-color: rgba(255,214,0,0.4);  color: var(--accent-yellow); }
+  .badge.wip     { background: rgba(255,107,0,0.1);  border-color: rgba(255,107,0,0.4);  color: var(--accent-orange); }
+
+  .badge::before { content: '●'; font-size: 6px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-eyebrow">◈ Rebel Alliance Infrastructure Division ◈</div>
+    <h1>The <span>Alliance Fleet</span></h1>
+    <div class="header-sub">Homelab System Architecture &nbsp;·&nbsp; 3-Node Proxmox Cluster &nbsp;·&nbsp; tima.dev</div>
+    <div class="header-line"></div>
+  </div>
+
+  <!-- EXTERNAL ACCESS -->
+  <div class="sep"><div class="sep-line"></div><span class="sep-label">External Access</span><div class="sep-line"></div></div>
+
+  <div class="flow-row" style="margin-bottom:28px;">
+    <div class="flow-node internet">
+      <div class="fn-label">Internet</div>
+      <div class="fn-detail">Users / Self</div>
+    </div>
+    <div class="flow-arrow"></div>
+    <div class="flow-node">
+      <div class="fn-label">Cloudflare</div>
+      <div class="fn-detail">DNS + Proxy<br>Wildcard SSL<br>*.tima.dev</div>
+    </div>
+    <div class="flow-arrow"></div>
+    <div class="flow-node">
+      <div class="fn-label">Tailscale</div>
+      <div class="fn-detail">Zero-Trust Overlay<br>Remote Access<br>100.x.x.x</div>
+    </div>
+    <div class="flow-arrow"></div>
+    <div class="flow-node">
+      <div class="fn-label">UniFi UDM</div>
+      <div class="fn-detail">Firewall / Router<br>VLAN Gateway<br>192.168.1.1</div>
+    </div>
+    <div class="flow-arrow"></div>
+    <div class="flow-node">
+      <div class="fn-label">Nginx PM</div>
+      <div class="fn-detail">Reverse Proxy<br>SSL Termination<br>Forward Auth</div>
+    </div>
+    <div class="flow-arrow"></div>
+    <div class="flow-node" style="border-color:rgba(122,58,238,0.6);">
+      <div class="fn-label" style="color:#c07aff;">Authentik SSO</div>
+      <div class="fn-detail">OIDC / SAML<br>MFA Enforcement<br>192.168.20.10</div>
+    </div>
+    <div class="flow-arrow"></div>
+    <div class="flow-note">
+      Services: 15+ apps protected<br>
+      AdGuard Home: 192.168.1.4<br>
+      US-8-150W Switch (PoE)
+    </div>
+  </div>
+
+  <!-- PROXMOX CLUSTER -->
+  <div class="sep"><div class="sep-line"></div><span class="sep-label">Proxmox Cluster — 3 Hypervisor Nodes</span><div class="sep-line"></div></div>
+
+  <div class="three-col">
+    <!-- NODE A -->
+    <div class="node-card node-a">
+      <div class="node-title">Node-A · Millennium Falcon</div>
+      <div class="node-subtitle">FCM2250 · AI / ML Workloads</div>
+      <div class="node-ip">192.168.1.10</div>
+      <div class="node-hw">
+        CPU: Intel Core Ultra 9<br>
+        GPU: RTX 4000 SFF Ada 20GB (VFIO)<br>
+        Role: AI inference · GPU passthrough
+      </div>
+      <div class="chip-grid">
+        <span class="chip ai">Tantive-III VM201</span>
+        <span class="chip ai">Ollama :11434</span>
+        <span class="chip ai">OpenWebUI :3000</span>
+        <span class="chip ai">AnythingLLM :3001</span>
+        <span class="chip ai">ComfyUI :8188</span>
+        <span class="chip media">Arcade-Stream VM450</span>
+        <span class="chip media">Sunshine/Moonlight</span>
+        <span class="chip media">ES-DE Emulators</span>
+        <span class="chip network">VFIO passthrough</span>
+        <span class="chip obs">GPU telemetry</span>
+      </div>
+    </div>
+
+    <!-- NODE B -->
+    <div class="node-card node-b">
+      <div class="node-title">Node-B · CR90 Corvette</div>
+      <div class="node-subtitle">QCM1255 · Data / Storage Ops</div>
+      <div class="node-ip">192.168.1.11</div>
+      <div class="node-hw">
+        CPU: AMD Ryzen 7 PRO<br>
+        RAM: ECC · ZFS storage pool<br>
+        Role: Data integrity · Backups
+      </div>
+      <div class="chip-grid">
+        <span class="chip storage">ZFS Pool</span>
+        <span class="chip storage">NFS exports</span>
+        <span class="chip obs">InfluxDB :8086</span>
+        <span class="chip obs">Grafana :3000</span>
+        <span class="chip compute">Home One VM200</span>
+        <span class="chip identity">Authentik SSO</span>
+        <span class="chip identity">PostgreSQL 15</span>
+        <span class="chip identity">Redis</span>
+        <span class="chip identity">ALLIANCE-DC01 VM300</span>
+        <span class="chip identity">AD DS · alliance.lab</span>
+        <span class="chip identity">Entra Connect · PHS</span>
+        <span class="chip compute">Canto-Bight VM400</span>
+        <span class="chip compute">Win11 Pro · AD Client</span>
+      </div>
+    </div>
+
+    <!-- NODE C -->
+    <div class="node-card node-c">
+      <div class="node-title">Node-C · Gozanti Cruiser</div>
+      <div class="node-subtitle">OptiPlex 7050 · Security / Net</div>
+      <div class="node-ip">192.168.1.12</div>
+      <div class="node-hw">
+        CPU: Intel i7-7700<br>
+        NICs: Dual NIC mod (VLAN routing)<br>
+        Role: Security · Networking
+      </div>
+      <div class="chip-grid">
+        <span class="chip security">Wazuh LXC110</span>
+        <span class="chip security">10+ agents</span>
+        <span class="chip bots">Stinger Mantis VM203</span>
+        <span class="chip bots">BD-1 Discord Bot</span>
+        <span class="chip security">Fulcrum VM204</span>
+        <span class="chip security">K-2SO Observer</span>
+        <span class="chip network">Dual NIC VLAN</span>
+        <span class="chip network">Tailscale Router</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- VM/LXC INVENTORY -->
+  <div class="sep"><div class="sep-line"></div><span class="sep-label">VM / LXC Inventory</span><div class="sep-line"></div></div>
+
+  <table class="vm-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>IP Address</th>
+        <th>VLAN</th>
+        <th>Node</th>
+        <th>Role / Services</th>
+        <th>Resources</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="vm-id">VM 200</td>
+        <td class="vm-name">Home One</td>
+        <td class="vm-ip">192.168.20.10</td>
+        <td>VLAN 20</td>
+        <td>Node-B</td>
+        <td class="vm-role">Authentik SSO · PostgreSQL 15 · Redis · Cert Authority</td>
+        <td class="vm-res">—</td>
+        <td><span class="badge online">Online</span></td>
+      </tr>
+      <tr>
+        <td class="vm-id">VM 201</td>
+        <td class="vm-name">Tantive-III</td>
+        <td class="vm-ip">192.168.20.20</td>
+        <td>VLAN 20</td>
+        <td>Node-A</td>
+        <td class="vm-role">Ollama · OpenWebUI (llm.tima.dev) · AnythingLLM · ComfyUI · RTX 4000 Ada VFIO</td>
+        <td class="vm-res">12GB RAM cap</td>
+        <td><span class="badge online">Online</span></td>
+      </tr>
+      <tr>
+        <td class="vm-id">LXC 110</td>
+        <td class="vm-name">Wazuh SIEM</td>
+        <td class="vm-ip">192.168.20.30</td>
+        <td>VLAN 20</td>
+        <td>Node-C</td>
+        <td class="vm-role">Wazuh Manager · 10+ agents · 25-rule custom ruleset (IDs 100100–100503)</td>
+        <td class="vm-res">—</td>
+        <td><span class="badge online">Online</span></td>
+      </tr>
+      <tr>
+        <td class="vm-id">VM</td>
+        <td class="vm-name">Grafana</td>
+        <td class="vm-ip">192.168.20.40</td>
+        <td>VLAN 20</td>
+        <td>Node-B</td>
+        <td class="vm-role">Grafana Dashboards · Alerting · Discord contact point</td>
+        <td class="vm-res">—</td>
+        <td><span class="badge online">Online</span></td>
+      </tr>
+      <tr>
+        <td class="vm-id">VM</td>
+        <td class="vm-name">InfluxDB</td>
+        <td class="vm-ip">192.168.20.41</td>
+        <td>VLAN 20</td>
+        <td>Node-B</td>
+        <td class="vm-role">Time-series metrics · GPU telemetry · HA history · Telegraf agents</td>
+        <td class="vm-res">—</td>
+        <td><span class="badge online">Online</span></td>
+      </tr>
+      <tr>
+        <td class="vm-id">VM</td>
+        <td class="vm-name">Uptime Kuma</td>
+        <td class="vm-ip">192.168.20.61</td>
+        <td>VLAN 20</td>
+        <td>—</td>
+        <td class="vm-role">Service uptime monitoring · Status page</td>
+        <td class="vm-res">—</td>
+        <td><span class="badge online">Online</span></td>
+      </tr>
+      <tr>
+        <td class="vm-id">VM</td>
+        <td class="vm-name">Phoenix-Nest</td>
+        <td class="vm-ip">192.168.20.70</td>
+        <td>VLAN 20</td>
+        <td>—</td>
+        <td class="vm-role">n8n (84+ workflows) · Vaultwarden · Homepage dashboard</td>
+        <td class="vm-res">—</td>
+        <td><span class="badge online">Online</span></td>
+      </tr>
+      <tr>
+        <td class="vm-id">VM 203</td>
+        <td class="vm-name">Stinger Mantis</td>
+        <td class="vm-ip">192.168.20.80</td>
+        <td>VLAN 20</td>
+        <td>Node-C</td>
+        <td class="vm-role">BD-1 Discord Bot (Node.js · PM2 · bd1 user) · Anthropic API · GitHub KB sync</td>
+        <td class="vm-res">—</td>
+        <td><span class="badge online">Online</span></td>
+      </tr>
+      <tr>
+        <td class="vm-id">VM 204</td>
+        <td class="vm-name">Fulcrum</td>
+        <td class="vm-ip">192.168.50.10</td>
+        <td>VLAN 50</td>
+        <td>Node-C</td>
+        <td class="vm-role">K-2SO Security Observer · Debian 13 · Triple sandbox · Ollama llama3.1:8b · Read-only tokens</td>
+        <td class="vm-res">—</td>
+        <td><span class="badge online">Online</span></td>
+      </tr>
+      <tr>
+        <td class="vm-id">VM 300</td>
+        <td class="vm-name">ALLIANCE-DC01</td>
+        <td class="vm-ip">192.168.1.50</td>
+        <td>VLAN 1</td>
+        <td>Node-B</td>
+        <td class="vm-role">Windows Server 2022 · Active Directory DS · DNS Server · Domain: alliance.lab · Group Policy Mgmt · Entra Connect (PHS → Azure)</td>
+        <td class="vm-res">4GB RAM · 60GB</td>
+        <td><span class="badge online">Online</span></td>
+      </tr>
+      <tr>
+        <td class="vm-id">VM 400</td>
+        <td class="vm-name">Canto-Bight</td>
+        <td class="vm-ip">192.168.20.86</td>
+        <td>VLAN 20</td>
+        <td>Node-B</td>
+        <td class="vm-role">Windows 11 Pro · Domain-joined (alliance.lab) · GPO test workstation · AD cascade validation · RDP :3389</td>
+        <td class="vm-res">16GB RAM · 150GB</td>
+        <td><span class="badge online">Online</span></td>
+      </tr>
+      <tr>
+        <td class="vm-name">Arcade-Stream</td>
+        <td class="vm-ip">192.168.20.85</td>
+        <td>VLAN 20</td>
+        <td>Node-A</td>
+        <td class="vm-role">Ubuntu 24.04 · Sunshine (Moonlight streaming) · RTX 4000 Ada VFIO · ES-DE · Emulators · SMB mounts from Home One /srv/arcade</td>
+        <td class="vm-res">12GB RAM · 128GB</td>
+        <td><span class="badge online">Online</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SERVICES PANELS -->
+  <div class="sep"><div class="sep-line"></div><span class="sep-label">Services by Function</span><div class="sep-line"></div></div>
+
+  <div class="two-col">
+
+    <!-- IDENTITY & ACCESS -->
+    <div class="panel identity">
+      <div class="panel-title">Identity &amp; Access Management</div>
+      <div class="svc-row cols-2">
+        <div class="svc-box identity">
+          <div class="svc-name">Authentik SSO</div>
+          <div class="svc-detail">Home One · :9000<br>OIDC / SAML / Forward Auth<br>15+ services · MFA enforced</div>
+        </div>
+        <div class="svc-box identity">
+          <div class="svc-name">Nginx Proxy Manager</div>
+          <div class="svc-detail">Reverse proxy layer<br>SSL termination<br>Forward auth integration</div>
+        </div>
+      </div>
+      <div class="svc-row cols-2">
+        <div class="svc-box identity">
+          <div class="svc-name">Cloudflare DNS</div>
+          <div class="svc-detail">*.tima.dev wildcard SSL<br>Proxy + DDoS protection<br>Zero-trust tunnel ready</div>
+        </div>
+        <div class="svc-box identity">
+          <div class="svc-name">Tailscale</div>
+          <div class="svc-detail">Zero-trust mesh overlay<br>Remote admin access<br>100.x.x.x namespace</div>
+        </div>
+      </div>
+      <div class="svc-row cols-2">
+        <div class="svc-box identity">
+          <div class="svc-name">Portainer CE</div>
+          <div class="svc-detail">Home One · portainer-madine<br>portainer.tima.dev<br>Docker container mgmt</div>
+        </div>
+        <div class="svc-box identity">
+          <div class="svc-name">Vaultwarden</div>
+          <div class="svc-detail">Phoenix-Nest<br>Self-hosted Bitwarden<br>Secrets management</div>
+        </div>
+      </div>
+      <div class="svc-row cols-2">
+        <div class="svc-box identity">
+          <div class="svc-name">ALLIANCE-DC01</div>
+          <div class="svc-detail">VM 300 · 192.168.1.50<br>Windows Server 2022 · Node-B<br>AD DS · DNS · alliance.lab<br>Entra Connect · PHS → Azure</div>
+        </div>
+        <div class="svc-box compute">
+          <div class="svc-name">Canto-Bight</div>
+          <div class="svc-detail">VM 400 · 192.168.20.86<br>Windows 11 Pro · Node-B<br>Domain-joined · alliance.lab<br>GPO test workstation · RDP</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OBSERVABILITY -->
+    <div class="panel obs">
+      <div class="panel-title">Observability Stack</div>
+      <div class="svc-row cols-2">
+        <div class="svc-box obs">
+          <div class="svc-name">InfluxDB</div>
+          <div class="svc-detail">192.168.20.41 · :8086<br>Time-series store<br>GPU + node telemetry</div>
+        </div>
+        <div class="svc-box obs">
+          <div class="svc-name">Grafana</div>
+          <div class="svc-detail">192.168.20.40<br>Dashboards + Alerting<br>Discord contact point</div>
+        </div>
+      </div>
+      <div class="svc-row cols-2">
+        <div class="svc-box obs">
+          <div class="svc-name">Uptime Kuma</div>
+          <div class="svc-detail">192.168.20.61<br>Service health monitoring<br>Status page</div>
+        </div>
+        <div class="svc-box obs">
+          <div class="svc-name">Telegraf Agents</div>
+          <div class="svc-detail">All nodes + VMs<br>Metrics collection<br>→ InfluxDB pipeline</div>
+        </div>
+      </div>
+      <div class="svc-row cols-1" style="grid-template-columns:1fr;">
+        <div class="svc-box obs">
+          <div class="svc-name">n8n Alert Routing — 15 Workflows</div>
+          <div class="svc-detail">Phoenix-Nest · 11 active · 2 deactivated (ZFS Node-B, NVIDIA Telegraf) · 2 pending upstream data<br>Detect / Enrich / Decide / Act / Report pattern · Discord embed format standard</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="two-col">
+
+    <!-- AI STACK -->
+    <div class="panel ai">
+      <div class="panel-title">AI / ML Stack — Tantive-III</div>
+      <div class="svc-row cols-2">
+        <div class="svc-box ai">
+          <div class="svc-name">Ollama</div>
+          <div class="svc-detail">:11434 · RTX 4000 Ada<br>llama3.1:8b + models<br>K-2SO inference backend</div>
+        </div>
+        <div class="svc-box ai">
+          <div class="svc-name">OpenWebUI</div>
+          <div class="svc-detail">llm.tima.dev · :3000<br>Chat UI · Model mgmt<br>Authentik SSO protected</div>
+        </div>
+      </div>
+      <div class="svc-row cols-2">
+        <div class="svc-box ai">
+          <div class="svc-name">AnythingLLM</div>
+          <div class="svc-detail">:3001 · MS Learning WS<br>2,385+ vectors embedded<br>AZ-900/104/500/700 PDFs</div>
+        </div>
+        <div class="svc-box ai">
+          <div class="svc-name">ComfyUI</div>
+          <div class="svc-detail">:8188 · restart:no enforced<br>Image generation<br>VRAM crash-loop guard</div>
+        </div>
+      </div>
+      <div class="svc-row cols-1" style="grid-template-columns:1fr;">
+        <div class="svc-box ai">
+          <div class="svc-name">GPU Mode Mgmt — GRUB Hardened</div>
+          <div class="svc-detail">pcie_aspm=off · pci=noaer · nmi_watchdog=1 · Bash scripts + n8n webhooks · BD-1 /gpu commands</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECURITY -->
+    <div class="panel security">
+      <div class="panel-title">Security — SIEM &amp; Bots</div>
+      <div class="svc-row cols-2">
+        <div class="svc-box security">
+          <div class="svc-name">Wazuh Manager</div>
+          <div class="svc-detail">LXC 110 · 192.168.20.30<br>10+ active agents<br>Custom ruleset 100100–100503</div>
+        </div>
+        <div class="svc-box security">
+          <div class="svc-name">K-2SO Observer</div>
+          <div class="svc-detail">Fulcrum VM204 · VLAN 50<br>Read-only AI security bot<br>llama3.1:8b · Triple sandbox</div>
+        </div>
+      </div>
+      <div class="svc-row cols-2">
+        <div class="svc-box security">
+          <div class="svc-name">Wazuh Rules</div>
+          <div class="svc-detail">SSH hardening · Authentik<br>Priv escalation detection<br>Cryptomining + FIM</div>
+        </div>
+        <div class="svc-box security">
+          <div class="svc-name">K-2SO Read-Only Tokens</div>
+          <div class="svc-detail">InfluxDB: k2so-reader<br>Proxmox: k2so@pam (Audit)<br>Wazuh: role_id 2 readonly</div>
+        </div>
+      </div>
+      <div class="svc-row cols-1" style="grid-template-columns:1fr;">
+        <div class="svc-box security">
+          <div class="svc-name">K-2SO Webhooks — 3 Live Discord Channels</div>
+          <div class="svc-detail">security-alerts · metrics-bridge · bot-status · VLAN 50 (192.168.50.0/28) isolated network</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- AUTOMATION + BOTS -->
+  <div class="two-col">
+    <div class="panel automation">
+      <div class="panel-title">Automation — Phoenix-Nest</div>
+      <div class="svc-row cols-2">
+        <div class="svc-box automation">
+          <div class="svc-name">n8n Workflows — 84+</div>
+          <div class="svc-detail">192.168.20.70<br>Detect/Enrich/Decide/Act/Report<br>Once-daily scheduling standard</div>
+        </div>
+        <div class="svc-box automation">
+          <div class="svc-name">Job Radar Pipeline</div>
+          <div class="svc-detail">JSearch + Active Jobs DB<br>RapidAPI PRO · LinkedIn/Indeed<br>Multi-workflow orchestration</div>
+        </div>
+      </div>
+      <div class="svc-row cols-2">
+        <div class="svc-box automation">
+          <div class="svc-name">Intel Feed Workflows</div>
+          <div class="svc-detail">Security RSS · Homelab RSS<br>Tech Blogs · Azure Cert Monitor<br>HN Firebase API</div>
+        </div>
+        <div class="svc-box automation">
+          <div class="svc-name">MS Cert Study System</div>
+          <div class="svc-detail">MS-Learn-Catalog-Sync<br>MS-Learn-Recommender<br>PostgreSQL on Home One</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel bots">
+      <div class="panel-title">Discord Bots — Alliance Fleet Server</div>
+      <div class="svc-row cols-1" style="grid-template-columns:1fr;">
+        <div class="svc-box bots">
+          <div class="svc-name">BD-1 — Full-Scope Assistant</div>
+          <div class="svc-detail">Stinger Mantis VM203 · Node.js · PM2 · bd1 user<br>Anthropic API (Haiku default · Sonnet escalation)<br>12+ commands · !bd1 mstudy/mquiz/mexplain/mlog/mweak/mprogress<br>KB sync: timanlemvo/bd1-knowledge (6hr) · KNOWLEDGE_EXPORT.md v4.4<br>GPU commands · /gpu status · /gpu mode</div>
+        </div>
+      </div>
+      <div class="svc-row cols-2">
+        <div class="svc-box bots">
+          <div class="svc-name">K-2SO — Read-Only Observer</div>
+          <div class="svc-detail">Fulcrum VM204 · Debian 13<br>NVIDIA NemoClaw/OpenShell<br>Security monitoring only</div>
+        </div>
+        <div class="svc-box bots">
+          <div class="svc-name">Admiral Ackbar — n8n Relay</div>
+          <div class="svc-detail">n8n webhook bridge<br>Alert routing to channels<br>28 channels · 7 categories</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARCADE + HOME ASSISTANT -->
+  <div class="two-col">
+    <div class="panel" style="border-color:rgba(170,42,170,0.4); margin-bottom:20px;">
+      <div class="panel-title" style="color:#ee80ee; border:1px solid rgba(170,42,170,0.4);">Gaming &amp; Media — Arcade-Stream</div>
+      <div class="svc-row cols-2">
+        <div class="svc-box media">
+          <div class="svc-name">Sunshine</div>
+          <div class="svc-detail">VM 450 · 192.168.20.85<br>Moonlight game streaming<br>RTX 4000 Ada HW encode</div>
+        </div>
+        <div class="svc-box media">
+          <div class="svc-name">ES-DE + Emulators</div>
+          <div class="svc-detail">Frontend UI<br>Multi-system emulation<br>SMB mounts from Home One</div>
+        </div>
+      </div>
+      <div class="svc-row cols-1" style="grid-template-columns:1fr;">
+        <div class="svc-box media">
+          <div class="svc-name">Storage: Home One /srv/arcade (SMB)</div>
+          <div class="svc-detail">roms · saves · bios · media — Apple TVs on IoT VLAN reach via firewall rules: TCP 47984/47989/48010, UDP 47998-48000/48002</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="border-color:rgba(42,170,122,0.3); margin-bottom:20px;">
+      <div class="panel-title" style="color:#60ddaa; border:1px solid rgba(42,170,122,0.3);">Home Automation</div>
+      <div class="svc-row cols-1" style="grid-template-columns:1fr;">
+        <div class="svc-box automation">
+          <div class="svc-name">Home Assistant</div>
+          <div class="svc-detail">IoT VLAN (192.168.30.x)<br>Smart home automation<br>Isolated from services VLAN</div>
+        </div>
+      </div>
+      <div class="svc-row cols-1" style="grid-template-columns:1fr;">
+        <div class="svc-box network">
+          <div class="svc-name">IoT Device Isolation</div>
+          <div class="svc-detail">Apple TVs · Smart devices<br>VLAN 30 · 192.168.30.0/24<br>No unrestricted LAN access</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PORTFOLIO + CONTENT -->
+  <div class="panel" style="border-color:rgba(74,158,255,0.3); margin-bottom:20px;">
+    <div class="panel-title" style="color:var(--accent-blue); border:1px solid rgba(74,158,255,0.3);">Portfolio &amp; Content Infrastructure</div>
+    <div class="svc-row cols-4">
+      <div class="svc-box compute">
+        <div class="svc-name">tima.dev</div>
+        <div class="svc-detail">Astro-based portfolio<br>GitHub hosted<br>Interview-ready docs</div>
+      </div>
+      <div class="svc-box compute">
+        <div class="svc-name">holocron-labs.tima.dev</div>
+        <div class="svc-detail">Ghost CMS blog<br>15+ published posts<br>27 drafted (007-033)</div>
+      </div>
+      <div class="svc-box compute">
+        <div class="svc-name">Homelab Portfolio Repo</div>
+        <div class="svc-detail">Alliance-Homelab-Infrastructure<br>SIEM · Zero-Trust · GPU AI<br>Active Directory Lab<br>PROBLEM / IMPL / TRADEOFFS</div>
+      </div>
+      <div class="svc-box compute">
+        <div class="svc-name">Ghost Theme</div>
+        <div class="svc-detail">holocron-logs-lab-theme<br>25 Star Wars palettes<br>H1 subtitle extraction</div>
+      </div>
+    </div>
+    <div class="svc-row cols-2">
+      <div class="svc-box network">
+        <div class="svc-name">Sentinel + Tydirium — In Pipeline</div>
+        <div class="svc-detail">2× Raspberry Pi 4B<br>k3s Kubernetes cluster<br>Container orchestration — next portfolio milestone</div>
+      </div>
+      <div class="svc-box obs">
+        <div class="svc-name">Roadmap</div>
+        <div class="svc-detail">Proxmox Backup Server<br>Offsite B2/S3 replication<br>Terraform IaC · Grafana alerts<br>Second DC (Node-C)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NETWORK / VLAN -->
+  <div class="sep"><div class="sep-line"></div><span class="sep-label">Networks — VLANs</span><div class="sep-line"></div></div>
+
+  <div class="vlan-row">
+    <div class="vlan-box mgmt">
+      <div class="vlan-num">VLAN 1</div>
+      <div class="vlan-name">Management</div>
+      <div class="vlan-cidr">192.168.1.0/24</div>
+      <div class="vlan-desc">Proxmox nodes<br>UniFi UDM<br>AdGuard · .1.4<br>Hypervisors · .10-.12<br>ALLIANCE-DC01 · .50</div>
+    </div>
+    <div class="vlan-box svc">
+      <div class="vlan-num">VLAN 20</div>
+      <div class="vlan-name">Services</div>
+      <div class="vlan-cidr">192.168.20.0/24</div>
+      <div class="vlan-desc">VMs · LXCs<br>Home One · .10<br>Tantive-III · .20<br>Wazuh · .30<br>Canto-Bight · .86</div>
+    </div>
+    <div class="vlan-box iot">
+      <div class="vlan-num">VLAN 30</div>
+      <div class="vlan-name">IoT</div>
+      <div class="vlan-cidr">192.168.30.0/24</div>
+      <div class="vlan-desc">IoT devices<br>Isolated segment<br>No LAN access</div>
+    </div>
+    <div class="vlan-box dmz">
+      <div class="vlan-num">VLAN 40</div>
+      <div class="vlan-name">DMZ</div>
+      <div class="vlan-cidr">192.168.40.0/24</div>
+      <div class="vlan-desc">Bot-Net zone<br>Public-facing<br>Restricted egress</div>
+    </div>
+    <div class="vlan-box botnet">
+      <div class="vlan-num">VLAN 50</div>
+      <div class="vlan-name">Bot-Net / Sec</div>
+      <div class="vlan-cidr">192.168.50.0/28</div>
+      <div class="vlan-desc">K-2SO isolation<br>Fulcrum · .10<br>Security sandbox<br>Triple isolation</div>
+    </div>
+  </div>
+
+  <!-- COLOR LEGEND -->
+  <div class="sep"><div class="sep-line"></div><span class="sep-label">Service Color Legend</span><div class="sep-line"></div></div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(26,58,110,0.6);border-color:#2a5aae;"></div>Compute / Hypervisor</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(58,26,110,0.6);border-color:#7a3aee;"></div>Identity / IAM</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(26,74,46,0.6);border-color:#2a9a5e;"></div>Observability</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(74,42,14,0.6);border-color:#ca7a2e;"></div>Storage / Backup</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(42,26,78,0.6);border-color:#7a4aee;"></div>AI / ML</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(74,26,26,0.6);border-color:#ee3a3a;"></div>Security / SIEM</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(26,58,74,0.6);border-color:#2a8aaa;"></div>Network / DNS</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(26,74,58,0.6);border-color:#2aaa7a;"></div>Automation / n8n</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(58,42,26,0.6);border-color:#aa7a2a;"></div>Bots / Discord</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(26,58,74,0.6);border-color:#4a9eff;"></div>Portfolio / Content</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(58,26,58,0.6);border-color:#aa2aaa;"></div>Gaming / Media</div>
+    <div class="legend-item"><div class="legend-dot" style="background:rgba(26,58,110,0.6);border-color:#1a3a6e;"></div>Windows Server / AD</div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      Generated: 2026-04-28<br>
+      Source: tima.dev · holocron-labs.tima.dev<br>
+      Repo: Alliance-Homelab-Infrastructure
+    </div>
+    <div class="footer-right">
+      <span class="glow-text">THE ALLIANCE FLEET</span><br>
+      Many Bothans died to bring us this infrastructure.<br>
+      timanlemvo · tima.dev
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
