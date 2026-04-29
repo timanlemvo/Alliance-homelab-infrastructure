@@ -44,6 +44,7 @@ This is a working simulation of enterprise infrastructure, built by applying les
 │                         │ └─────────────────────┘ │                          │
 └─────────────────────────┴─────────────────────────┴──────────────────────────┘
 ```
+**[Live Architecture Diagram →](https://timanlemvo.github.io/Alliance-homelab-infrastructure/)**
 
 ### Hardware Specifications
 
