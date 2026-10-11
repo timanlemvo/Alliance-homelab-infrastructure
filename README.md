@@ -1,12 +1,12 @@
 # Proxmox Homelab: Cloud, Security & Platform Engineering Lab
 
-Production-grade infrastructure running 25+ services across a 3-node cluster with zero-trust identity, security monitoring, full-stack observability, GPU-accelerated AI workloads, and hybrid Active Directory with Entra Connect sync.
+Production-grade infrastructure running 30+ services across a 4-node cluster with zero-trust identity, security monitoring, full-stack observability, GPU-accelerated AI workloads, and hybrid Active Directory with Entra Connect sync.
 
 ---
 
 ## Overview
 
-This is a working simulation of enterprise infrastructure, built by applying lessons from 7 years managing 200+ users at Team Liquid, Stagwell, and CAA. Every design decision (VLAN segmentation, centralized identity, observability pipelines, threat detection, hybrid identity) mirrors production standards implemented professionally.
+This is a working simulation of enterprise infrastructure, built by applying lessons from 8 years managing 200+ users at Team Liquid, Stagwell, and CAA. Every design decision (VLAN segmentation, centralized identity, observability pipelines, threat detection, hybrid identity) mirrors production standards implemented professionally.
 
 `Linux Administration` `Proxmox VE Clustering` `Active Directory` `Hybrid Identity (Entra Connect)` `VLAN Segmentation` `Firewall Policy` `SIEM/XDR (Wazuh)` `SSO/IAM (Authentik)` `Observability (Telegraf → InfluxDB → Grafana)` `Zero-Trust (Tailscale)` `GPU Passthrough (VFIO/IOMMU)` `Reverse Proxy & TLS` `Threat Detection & Response` `Incident Forensics` `Infrastructure Documentation`
 
@@ -16,8 +16,8 @@ This is a working simulation of enterprise infrastructure, built by applying les
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                        PROXMOX VE CLUSTER (3 Nodes)                          │
-│                      Corosync Quorum │ Kernel 6.17.x-pve                     │
+│                        PROXMOX VE CLUSTER (4 Nodes)                          │
+│                      Corosync Quorum │ Kernel 7.0.14-pve                     │
 ├─────────────────────────┬─────────────────────────┬──────────────────────────┤
 │      NODE-A             │      NODE-B             │      NODE-C              │
 │   "Millennium Falcon"   │    "CR90 Corvette"      │   "Gozanti Cruiser"      │
@@ -42,7 +42,11 @@ This is a working simulation of enterprise infrastructure, built by applying les
 │                         │ │ HomeAssistant       │ │                          │
 │                         │ │ Homepage            │ │                          │
 │                         │ └─────────────────────┘ │                          │
-└─────────────────────────┴─────────────────────────┴──────────────────────────┘
+├─────────────────────────┴─────────────────────────┴──────────────────────────┤
+│      NODE-D  "GR-75 Transport"  (OptiPlex 7040 Micro)                        │
+│      Intel i5-6500T │ 24GB DDR4 │ 1TB NVMe + 2TB SATA                        │
+│      ROLE: Agent & Workloads │ Jocasta (Hermes Agent)                         │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 **[Live Architecture Diagram →](https://timanlemvo.github.io/Alliance-homelab-infrastructure/)**
 
@@ -55,8 +59,9 @@ This is a working simulation of enterprise infrastructure, built by applying les
 | Node-A | Millennium Falcon | Intel Core Ultra 9 | 64GB DDR5 | 2TB NVMe Gen4 | RTX 4000 Ada 20GB (VFIO passthrough) |
 | Node-B | CR90 Corvette | AMD Ryzen 7 PRO | 64GB DDR5 ECC | 4TB | ECC memory for data integrity, hosts ALLIANCE-DC01 |
 | Node-C | Gozanti Cruiser | Intel i7-7700 | 32GB DDR4 | 512GB NVMe + 1TB SATA | 2.5GbE NIC hardware mod |
+| Node-D | GR-75 Transport | Intel i5-6500T | 24GB DDR4 | 1TB NVMe + 2TB SATA | Micro form factor, low power |
 
-Each node is purpose-built for its workload. Node-A carries the GPU for AI/ML inference. 20GB VRAM handles large parameter models. Node-B uses ECC memory because it runs the data pipeline where silent bit-flip corruption in time-series or authentication data would poison monitoring and identity. It also hosts ALLIANCE-DC01: ECC RAM directly protects NTDS.dit from silent memory corruption, making it the right home for the domain controller. Node-C handles network-edge services and serves as the Tailscale subnet router, keeping the security control plane on a dedicated node.
+Each node is purpose-built for its workload. Node-A carries the GPU for AI/ML inference. 20GB VRAM handles large parameter models. Node-B uses ECC memory because it runs the data pipeline where silent bit-flip corruption in time-series or authentication data would poison monitoring and identity. It also hosts ALLIANCE-DC01: ECC RAM directly protects NTDS.dit from silent memory corruption, making it the right home for the domain controller. Node-C handles network-edge services and serves as the Tailscale subnet router, keeping the security control plane on a dedicated node. Node-D (added October 2026) runs the Jocasta agent platform and light workloads, offloading Node-B.
 
 ---
 
@@ -75,6 +80,7 @@ Each node is purpose-built for its workload. Node-A carries the GPU for AI/ML in
 ║  ├─ 192.168.1.10  Node-A Proxmox (Millennium Falcon)                     ║
 ║  ├─ 192.168.1.11  Node-B Proxmox (CR90 Corvette)                         ║
 ║  ├─ 192.168.1.12  Node-C Proxmox (Gozanti Cruiser)                       ║
+║  ├─ 192.168.1.13  Node-D Proxmox (GR-75 Transport)                      ║
 ║  ├─ 192.168.1.50  ALLIANCE-DC01 (Windows Server 2022, AD DS + DNS)       ║
 ║  └─ No DHCP, static assignments only                                     ║
 ║                                                                          ║
@@ -156,6 +162,7 @@ VLAN 20 / Naboo --- Backend Service (Grafana, n8n, OpenWebUI, etc.)
 │  100.x.x.10 --> Node-A (Millennium Falcon)                  │
 │  100.x.x.11 --> Node-B (CR90 Corvette)                      │
 │  100.x.x.12 --> Node-C (Gozanti Cruiser) <- Subnet Router   │
+│  100.x.x.13 --> Node-D (GR-75 Transport)                    │
 │  100.x.x.20 --> Selected VMs/Containers                     │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -211,13 +218,13 @@ Single SSO login with 100% MFA coverage across all services. Complete login audi
 
 **Stack:** Telegraf → InfluxDB 2.x (Flux) → Grafana → Discord alerts
 
-10-second metric granularity across all 3 nodes. This pipeline was the sole reason a hard lockup root cause analysis was possible when all local logs were destroyed by `log2ram`.
+10-second metric granularity across all 4 nodes. This pipeline was the sole reason a hard lockup root cause analysis was possible when all local logs were destroyed by `log2ram`.
 
 [VFIO Lockup Forensics →](https://github.com/timanlemvo/technical-writeups/tree/main/proxmox-vfio-lockup-forensics)
 
 ### Network Segmentation
 
-**Stack:** UniFi Dream Machine + 4 VLANs
+**Stack:** UniFi Dream Machine + 5 VLANs
 
 Management, Services, IoT, and DMZ fully segmented. IoT devices cannot reach infrastructure. DMZ is the only public-facing surface. DHCP disabled on high-trust and high-exposure VLANs.
 
@@ -268,7 +275,7 @@ Node-A (Millennium Falcon) suffered a complete hard lockup with zero local crash
 | Wazuh SIEM + n8n alerting | Splunk / Sentinel / QRadar | Security Engineer, SOC |
 | Grafana + Telegraf + InfluxDB | Datadog / New Relic / Prometheus | SRE, Platform Engineering |
 | VLAN segmentation + UDM firewall | Cisco / Palo Alto / Fortinet | Network Engineer, Cloud Security |
-| Proxmox 3-node cluster | VMware / Hyper-V / Nutanix | Systems Engineer, Virtualization |
+| Proxmox 4-node cluster | VMware / Hyper-V / Nutanix | Systems Engineer, Virtualization |
 | Ollama + GPU passthrough | SageMaker / ML Platform | MLOps, AI Infrastructure |
 | Tailscale zero-trust | Zscaler / Cloudflare Access | Cloud Security, Zero Trust |
 | Incident forensics writeup | Production postmortem | SRE, Incident Response |
@@ -279,7 +286,7 @@ Node-A (Millennium Falcon) suffered a complete hard lockup with zero local crash
 
 ### Implemented
 
-- 3-node Proxmox cluster with corosync quorum
+- 4-node Proxmox cluster with corosync quorum
 - 5-VLAN segmentation (Management/Tatooine, Services/Naboo, IoT/Mustafar, DMZ/Scarif, Security Sandbox/Bot-Net)
 - Active Directory domain controller (ALLIANCE-DC01) on Node-B with cascading GPOs and break/fix testing
 - Entra Connect hybrid identity sync (Password Hash Sync) to Azure tenant
@@ -291,25 +298,38 @@ Node-A (Millennium Falcon) suffered a complete hard lockup with zero local crash
 - DNS filtering via AdGuard
 - Reverse proxy with TLS termination via NPM
 - Self-hosted password management (Vaultwarden)
+- Azure Blob offsite backups via azcopy (nightly cron, SAS-scoped)
+- Jocasta AI agent on Hermes framework (local Ollama + Claude API elevation)
+- Alliance Fleet Codex (BookStack + Gitea + NetBox, nightly n8n sync)
+- Beszel server monitoring across all nodes
+- GPU thermal safety with Ollama circuit breaker
+- n8n automation platform (20+ active workflows)
+- Home Assistant on VLAN 30
+- RustDesk self-hosted remote desktop
+- K-2SO and BD-1 Discord bots (BD-1 archived)
 
 ### In Progress
 
-- Automated threat response integration for UniFi Dream Machine (rebuilding after OPNsense migration)
+- AZ-104 certification prep
 - Wazuh agent tuning and custom detection rule expansion
-- Grafana dashboard buildout for cluster-wide visibility
 - Inter-VLAN firewall rule hardening
 - Tailscale ACL policy refinement
 - Second domain controller on Node-C for AD redundancy
+- DFIR forensics lab (VMs 900-904 range on Node-A)
 
 ### Planned
 
 | Initiative | Why |
 |-----------|-----|
-| Proxmox Backup Server | Scheduled VM/CT snapshots with retention policies |
-| Offsite encrypted backups | B2 or S3-compatible replication for disaster recovery |
-| Kubernetes (k3s) cluster on Sentinel + Tydirium | Two Raspberry Pi 4B nodes dedicated to container orchestration — next portfolio milestone, in the pipeline |
+| Kubernetes (k3s) on Ghost Squadron | Raspberry Pi cluster for container orchestration, next portfolio milestone |
 | Terraform for VM provisioning | Full IaC, GitOps workflow |
 | Grafana alerting rules | CPU, memory, disk, service availability thresholds |
+
+### Completed (previously planned)
+
+- Offsite encrypted backups: Azure Blob via azcopy, nightly cron from Node-B
+- Node-D (GR-75 Transport) added to cluster, Jocasta agent migrated from Node-B
+- n8n automated threat response with UniFi IP blocking via AbuseIPDB enrichment
 
 ---
 
