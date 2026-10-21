@@ -33,7 +33,7 @@ Every role taught me the same thing from a different angle: **what production re
 
 Operational experience tells you *what* matters. It doesn't always let you build it yourself.
 
-The Alliance Fleet is how I'm closing that gap. It's a 3-node Proxmox cluster running 25+ services — SIEM, identity management, observability pipelines, network segmentation, GPU-accelerated AI workloads — designed to mirror the standards I followed (and sometimes lacked) in enterprise environments.
+The Alliance Fleet is how I'm closing that gap. It's a 4-node Proxmox cluster running 30+ services, plus a 3-node K3s cluster on Raspberry Pis for resilience: SIEM, identity management, observability pipelines, network segmentation, GPU-accelerated AI workloads — designed to mirror the standards I followed (and sometimes lacked) in enterprise environments.
 
 This isn't a tutorial follow-along. Every component exists because I wanted to understand *why* it works, not just *how* to configure it.
 
@@ -42,8 +42,10 @@ This isn't a tutorial follow-along. Every component exists because I wanted to u
 | Node | Codename | Role |
 |------|----------|------|
 | **Node A** | Millennium Falcon | AI/ML Compute — RTX 4000 Ada, Ollama, VFIO passthrough |
-| **Node B** | CR90 Corvette | Data & Operations — PostgreSQL, InfluxDB, Authentik, Grafana |
-| **Node C** | Gozanti Cruiser | Network & Security — Wazuh SIEM, AdGuard, Nginx Proxy Manager |
+| **Node B** | CR90 Corvette | Identity, Data & Observability: Authentik, Infisical, InfluxDB, Grafana |
+| **Node C** | Gozanti Cruiser | Network & Security: Wazuh SIEM, AdGuard, Nginx Proxy Manager |
+| **Node D** | GR-75 Transport | Agents & Workloads: domain controller, Jocasta agent, documentation stack |
+| **Ghost Squadron** | Phantom, Gauntlet, Nightbrother | Resilience layer: 3-node K3s cluster (embedded etcd) on Raspberry Pi 4B |
 
 Full architecture documentation lives in the [Alliance Homelab Infrastructure](https://github.com/timanlemvo/Alliance-homelab-infrastructure) repo.
 

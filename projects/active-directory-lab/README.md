@@ -12,7 +12,7 @@ A two-day sprint to build a production-representative Active Directory environme
 - Entra Connect Password Hash Sync to an existing Azure tenant
 - Windows 11 Pro VM (Canto-Bight) built from scratch and domain-joined
 - VirtIO driver installation for Windows VMs on Proxmox
-- DC migration to ECC RAM node for data integrity
+- DC live migrations across nodes (Node-A, Node-B, then Node-D in October 2026)
 
 Includes a documented rebuild after selecting the wrong Windows Server edition (Server Core vs. Desktop Experience), which blocked Entra Connect installation due to missing WPF/XAML rendering components.
 
@@ -25,7 +25,7 @@ Includes a documented rebuild after selecting the wrong Windows Server edition (
 | Domain Controller | ALLIANCE-DC01, Windows Server 2022 (Desktop Experience) |
 | Forest | alliance.lab |
 | DC IP | 192.168.1.50, VLAN 1 (Management) |
-| Node (final) | Node-B CR90 Corvette (QCM1255, AMD Ryzen 7 PRO, ECC RAM) |
+| Node (current) | Node-D GR-75 Transport (OptiPlex 7040 Micro), migrated from Node-B in October 2026 |
 | Test Workstation | Canto-Bight, VM 400, Windows 11 Pro |
 | Workstation IP | 192.168.20.86, VLAN 20 (Services) |
 | Azure Tenant | alliance-fleet-rg, West US 2 |
@@ -76,5 +76,5 @@ Full write-up at [holocron-labs.tima.dev](https://holocron-labs.tima.dev) coveri
 
 ## Related Projects
 
-- [Zero-Trust Identity Platform](../identity-access/) — Authentik SSO covering 15+ services via OIDC, SAML, and forward-auth
+- [Zero-Trust Identity Platform](../identity-access/) — Authentik SSO (7 applications registered via OIDC and SAML, expansion in progress)
 - [SIEM Automation Pipeline](../security-monitoring/) — Wazuh deployment with custom detection rules and n8n alert routing

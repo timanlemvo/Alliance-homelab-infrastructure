@@ -8,7 +8,7 @@
 | Domain Controller | ALLIANCE-DC01, Windows Server 2022 (Desktop Experience) |
 | DC IP | 192.168.1.50, VLAN 1 (Management) |
 | Forest | alliance.lab |
-| Node (final) | Node-B CR90 Corvette (QCM1255, AMD Ryzen 7 PRO, ECC RAM) |
+| Node (current) | Node-D GR-75 Transport (OptiPlex 7040 Micro), migrated from Node-B in October 2026 |
 | Test Workstation | Canto-Bight, Windows 11 Pro, VM 400 |
 | Workstation IP | 192.168.20.86, VLAN 20 (Services) |
 | Azure Tenant | alliance-fleet-rg, West US 2 |
@@ -179,3 +179,9 @@ Fix: Hardware tab on VM 300, select the CD/DVD drive, Edit, set media to "Do not
 Migrated to Node-B (QCM1255), target storage fast-lvm. Verified boot on Node-B, confirmed DNS resolution and AD replication health post-move.
 
 `ALLIANCE-DC01` now runs on the most stable node in the fleet.
+
+### Phase 8: DC Migration to Node-D (October 2026)
+
+When Node-D (GR-75 Transport) joined the cluster as the fourth node, `ALLIANCE-DC01` (VM 300) was moved there from Node-B as part of rebalancing the fleet. Node-B had 12 guests and was memory-committed, while the DC needs a modest, steady allocation (8GB assigned, about 7GB in use). Node-D now hosts the DC alongside Coruscant (Jocasta), Yavin-IV (documentation stack), and Home Assistant, using about 22GB of its 24GB.
+
+A single DC on a micro-form-factor node remains an accepted tradeoff. A second DC on Node-C is still on the roadmap (see [TRADEOFFS](TRADEOFFS.md)).

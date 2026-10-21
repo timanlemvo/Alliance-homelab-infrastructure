@@ -1,6 +1,6 @@
 # Identity & Access: Authentik SSO Zero-Trust Identity Platform
 
-Centralized authentication with enforced MFA across 15+ services in the Alliance Fleet.
+Centralized authentication with enforced MFA in the Alliance Fleet: 7 applications registered today (Beszel, BookStack, Gitea, Grafana, NetBox, Outline, Portainer), with an expansion sprint covering the privileged consoles under way.
 
 ## Overview
 
