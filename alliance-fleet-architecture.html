@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Alliance Fleet — Homelab System Architecture</title>
+<title>Alliance Fleet: Homelab System Architecture</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -663,7 +663,7 @@
   <div class="header">
     <div class="header-eyebrow">◈ Rebel Alliance Infrastructure Division ◈</div>
     <h1>The <span>Alliance Fleet</span></h1>
-    <div class="header-sub">Homelab System Architecture &nbsp;·&nbsp; 3-Node Proxmox Cluster &nbsp;·&nbsp; tima.dev</div>
+    <div class="header-sub">Homelab System Architecture &nbsp;·&nbsp; 4-Node Proxmox Cluster &nbsp;·&nbsp; tima.dev</div>
     <div class="header-line"></div>
   </div>
 
@@ -709,7 +709,7 @@
   </div>
 
   <!-- PROXMOX CLUSTER -->
-  <div class="sep"><div class="sep-line"></div><span class="sep-label">Proxmox Cluster — 4 Hypervisor Nodes</span><div class="sep-line"></div></div>
+  <div class="sep"><div class="sep-line"></div><span class="sep-label">Proxmox Cluster: 4 Hypervisor Nodes</span><div class="sep-line"></div></div>
 
   <div class="four-col">
     <!-- NODE A -->
@@ -934,24 +934,44 @@
         <td><span class="badge online">Online</span></td>
       </tr>
       <tr>
+        <td class="vm-id">VM 900</td>
+        <td class="vm-name">Devastator</td>
+        <td class="vm-ip">192.168.20.165</td>
+        <td>VLAN 20</td>
+        <td>Node-A</td>
+        <td class="vm-role">Kali 2026.2 (DFIR)</td>
+        <td class="vm-res">8GB · 80GB</td>
+        <td><span class="badge pending">On demand</span></td>
+      </tr>
+      <tr>
+        <td class="vm-id">VM 901</td>
+        <td class="vm-name">Profundity</td>
+        <td class="vm-ip">192.168.20.157</td>
+        <td>VLAN 20</td>
+        <td>Node-A</td>
+        <td class="vm-role">Ubuntu 22.04 + SIFT (DFIR, Autopsy)</td>
+        <td class="vm-res">16GB · 100GB</td>
+        <td><span class="badge pending">On demand</span></td>
+      </tr>
+      <tr>
         <td class="vm-id">VM 902</td>
         <td class="vm-name">Raddus</td>
-        <td class="vm-ip">—</td>
+        <td class="vm-ip">192.168.20.238</td>
         <td>VLAN 20</td>
         <td>Node-A</td>
         <td class="vm-role">Tsurugi 26.03 (DFIR)</td>
-        <td class="vm-res">4 vCPU · 16GB · 160GB</td>
-        <td><span class="badge pending">Stopped</span></td>
+        <td class="vm-res">8GB · 160GB</td>
+        <td><span class="badge pending">On demand</span></td>
       </tr>
       <tr>
-        <td class="vm-id">VM 903</td>
+        <td class="vm-id">VM 904</td>
         <td class="vm-name">Scimitar</td>
-        <td class="vm-ip">—</td>
+        <td class="vm-ip">n/a</td>
         <td>VLAN 20</td>
         <td>Node-A</td>
         <td class="vm-role">ArchStrike (DFIR)</td>
-        <td class="vm-res">4 vCPU · 16GB · 80GB</td>
-        <td><span class="badge pending">Stopped</span></td>
+        <td class="vm-res">16GB · 80GB</td>
+        <td><span class="badge pending">On demand</span></td>
       </tr>
       <tr>
         <td class="vm-id">LXC 100</td>
@@ -1010,7 +1030,7 @@
         <td>VLAN 30</td>
         <td>Node-D</td>
         <td class="vm-role">HAOS · InfluxDB integration · IoT controller</td>
-        <td class="vm-res">4 vCPU · 2GB · —</td>
+        <td class="vm-res">4 vCPU · 2GB</td>
         <td><span class="badge online">Online</span></td>
       </tr>
       <tr>
@@ -1026,7 +1046,7 @@
       <tr>
         <td class="vm-id">VM 300</td>
         <td class="vm-name">ALLIANCE-DC01</td>
-        <td class="vm-ip">—</td>
+        <td class="vm-ip">n/a</td>
         <td>VLAN 20</td>
         <td>Node-D</td>
         <td class="vm-role">Windows Server AD DS (console only)</td>
@@ -1097,7 +1117,7 @@
       <div class="svc-row cols-2">
         <div class="svc-box identity">
           <div class="svc-name">Cloudflare DNS</div>
-          <div class="svc-detail">*.tima.dev wildcard SSL<br>Proxy + DDoS protection<br>Zero-trust tunnel ready</div>
+          <div class="svc-detail">*.tima.dev wildcard SSL<br>Proxy + DDoS protection<br>Tunnel to NPM (cloudflared)</div>
         </div>
         <div class="svc-box identity">
           <div class="svc-name">Tailscale</div>
@@ -1151,8 +1171,8 @@
       </div>
       <div class="svc-row cols-1" style="grid-template-columns:1fr;">
         <div class="svc-box obs">
-          <div class="svc-name">n8n Alert Routing — 15 Workflows</div>
-          <div class="svc-detail">Phoenix-Nest · 11 active · 2 deactivated (ZFS Node-B, NVIDIA Telegraf) · 2 pending upstream data<br>Detect / Enrich / Decide / Act / Report pattern · Discord embed format standard</div>
+          <div class="svc-name">n8n Alert Routing: Command Bridge</div>
+          <div class="svc-detail">Phoenix-Nest · Wazuh routing to Discord · Codex sync watchdog · nightly summary<br>Jocasta enrichment tail paused until throttled · ZFS scrub workflow slated for removal</div>
         </div>
       </div>
     </div>
@@ -1163,21 +1183,21 @@
 
     <!-- AI STACK -->
     <div class="panel ai">
-      <div class="panel-title">AI / ML Stack — Tantive-III</div>
+      <div class="panel-title">AI / ML Stack: Tantive-III</div>
       <div class="svc-row cols-2">
         <div class="svc-box ai">
           <div class="svc-name">Ollama</div>
-          <div class="svc-detail">:11434 · RTX 4000 Ada<br>llama3.1:8b + models<br>K-2SO inference backend</div>
+          <div class="svc-detail">:11434 · RTX 4000 Ada<br>18 models · 6-model task roster<br>Jocasta inference backend</div>
         </div>
         <div class="svc-box ai">
           <div class="svc-name">OpenWebUI</div>
-          <div class="svc-detail">llm.tima.dev · :3000<br>Chat UI · Model mgmt<br>Authentik SSO protected</div>
+          <div class="svc-detail">llm.tima.dev · :3000<br>Chat UI · Model mgmt<br>Local auth (SSO pending)</div>
         </div>
       </div>
       <div class="svc-row cols-2">
         <div class="svc-box ai">
           <div class="svc-name">AnythingLLM</div>
-          <div class="svc-detail">:3001 · MS Learning WS<br>2,385+ vectors embedded<br>AZ-900/104/500/700 PDFs</div>
+          <div class="svc-detail">:3001 · MS Learning WS<br>2,385 vectors embedded<br>Contoso case studies (AZ-104/500)</div>
         </div>
         <div class="svc-box ai">
           <div class="svc-name">ComfyUI</div>
@@ -1186,29 +1206,29 @@
       </div>
       <div class="svc-row cols-1" style="grid-template-columns:1fr;">
         <div class="svc-box ai">
-          <div class="svc-name">GPU Mode Mgmt — GRUB Hardened</div>
-          <div class="svc-detail">pcie_aspm=off · pci=noaer · nmi_watchdog=1 · Bash scripts + n8n webhooks · BD-1 /gpu commands</div>
+          <div class="svc-name">GPU Thermal Safety: Three Layers</div>
+          <div class="svc-detail">Watchdog kill above 88C · circuit breaker (1 concurrent, 60s queue) · 45W power cap · GRUB hardened (pcie_aspm=off, pci=noaer)</div>
         </div>
       </div>
     </div>
 
     <!-- SECURITY -->
     <div class="panel security">
-      <div class="panel-title">Security — SIEM &amp; Bots</div>
+      <div class="panel-title">Security: SIEM &amp; Bots</div>
       <div class="svc-row cols-2">
         <div class="svc-box security">
           <div class="svc-name">Wazuh Manager</div>
-          <div class="svc-detail">LXC 110 · 192.168.20.30<br>10+ active agents<br>Custom ruleset 100100–100503</div>
+          <div class="svc-detail">LXC 110 · 192.168.20.30<br>15 agents · v4.14.2<br>41 custom rules (v2.0)</div>
         </div>
         <div class="svc-box security">
           <div class="svc-name">K-2SO Observer</div>
-          <div class="svc-detail">Fulcrum VM204 · VLAN 50<br>Read-only AI security bot<br>llama3.1:8b · Triple sandbox</div>
+          <div class="svc-detail">Stinger Mantis VM203<br>Read-only infrastructure observer<br>claude-haiku-4-5 via Anthropic API</div>
         </div>
       </div>
       <div class="svc-row cols-2">
         <div class="svc-box security">
           <div class="svc-name">Wazuh Rules</div>
-          <div class="svc-detail">SSH hardening · Authentik<br>Priv escalation detection<br>Cryptomining + FIM</div>
+          <div class="svc-detail">SSH + auth · Windows/AD<br>Privilege escalation · FIM<br>Self-monitoring + noise suppression</div>
         </div>
         <div class="svc-box security">
           <div class="svc-name">K-2SO Read-Only Tokens</div>
@@ -1217,8 +1237,8 @@
       </div>
       <div class="svc-row cols-1" style="grid-template-columns:1fr;">
         <div class="svc-box security">
-          <div class="svc-name">K-2SO Webhooks — 3 Live Discord Channels</div>
-          <div class="svc-detail">security-alerts · metrics-bridge · bot-status · VLAN 50 (192.168.50.0/28) isolated network</div>
+          <div class="svc-name">Discord Alert Routing: Ops Plan v3.1</div>
+          <div class="svc-detail">28 channels, 7 categories · Wazuh via n8n to #alert-triage · Grafana and Uptime Kuma post direct, so alerts survive an n8n outage</div>
         </div>
       </div>
     </div>
@@ -1228,10 +1248,10 @@
   <!-- AUTOMATION + BOTS -->
   <div class="two-col">
     <div class="panel automation">
-      <div class="panel-title">Automation — Phoenix-Nest</div>
+      <div class="panel-title">Automation: Phoenix-Nest</div>
       <div class="svc-row cols-2">
         <div class="svc-box automation">
-          <div class="svc-name">n8n Workflows — 84+</div>
+          <div class="svc-name">n8n Workflows: 40+</div>
           <div class="svc-detail">192.168.20.70<br>Detect/Enrich/Decide/Act/Report<br>Once-daily scheduling standard</div>
         </div>
         <div class="svc-box automation">
@@ -1245,28 +1265,28 @@
           <div class="svc-detail">Security RSS · Homelab RSS<br>Tech Blogs · Azure Cert Monitor<br>HN Firebase API</div>
         </div>
         <div class="svc-box automation">
-          <div class="svc-name">MS Cert Study System</div>
-          <div class="svc-detail">MS-Learn-Catalog-Sync<br>MS-Learn-Recommender<br>PostgreSQL on Home One</div>
+          <div class="svc-name">Command Bridge (P1-P6)</div>
+          <div class="svc-detail">Wazuh alert routing to Discord<br>Codex sync health watchdog<br>Nightly alert summary at 7 AM<br>HMAC-signed webhooks</div>
         </div>
       </div>
     </div>
 
     <div class="panel bots">
-      <div class="panel-title">Discord Bots — Alliance Fleet Server</div>
+      <div class="panel-title">Discord Bots: Alliance Fleet Server</div>
       <div class="svc-row cols-1" style="grid-template-columns:1fr;">
         <div class="svc-box bots">
-          <div class="svc-name">BD-1 — Full-Scope Assistant</div>
-          <div class="svc-detail">Stinger Mantis VM203 · Node.js · PM2 · bd1 user<br>Anthropic API (Haiku default · Sonnet escalation)<br>12+ commands · !bd1 mstudy/mquiz/mexplain/mlog/mweak/mprogress<br>KB sync: timanlemvo/bd1-knowledge (6hr) · KNOWLEDGE_EXPORT.md v4.4<br>GPU commands · /gpu status · /gpu mode</div>
+          <div class="svc-name">Jocasta: Hermes Agent</div>
+          <div class="svc-detail">Coruscant VM205 · Node-D · local Ollama via circuit breaker<br>Discord, Home Assistant and webhook interfaces<br>Codex pipeline: BookStack to Gitea to 129 skills<br>BD-1 retired (archived)</div>
         </div>
       </div>
       <div class="svc-row cols-2">
         <div class="svc-box bots">
-          <div class="svc-name">K-2SO — Read-Only Observer</div>
-          <div class="svc-detail">Fulcrum VM204 · Debian 13<br>NVIDIA NemoClaw/OpenShell<br>Security monitoring only</div>
+          <div class="svc-name">K-2SO: Read-Only Observer</div>
+          <div class="svc-detail">Stinger Mantis VM203 · Node.js, PM2<br>claude-haiku-4-5 via Anthropic API<br>Read-only monitoring</div>
         </div>
         <div class="svc-box bots">
-          <div class="svc-name">Admiral Ackbar — n8n Relay</div>
-          <div class="svc-detail">n8n webhook bridge<br>Alert routing to channels<br>28 channels · 7 categories</div>
+          <div class="svc-name">Admiral Ackbar: Alert Persona</div>
+          <div class="svc-detail">Shared alert identity<br>n8n relay for Wazuh alerts<br>28 channels · 7 categories</div>
         </div>
       </div>
     </div>
@@ -1275,11 +1295,11 @@
   <!-- ARCADE + HOME ASSISTANT -->
   <div class="two-col">
     <div class="panel" style="border-color:rgba(170,42,170,0.4); margin-bottom:20px;">
-      <div class="panel-title" style="color:#ee80ee; border:1px solid rgba(170,42,170,0.4);">Gaming &amp; Media — Arcade-Stream</div>
+      <div class="panel-title" style="color:#ee80ee; border:1px solid rgba(170,42,170,0.4);">Gaming &amp; Media: Arcade-Stream</div>
       <div class="svc-row cols-2">
         <div class="svc-box media">
           <div class="svc-name">Sunshine</div>
-          <div class="svc-detail">VM 450 · 192.168.20.85<br>Moonlight game streaming<br>RTX 4000 Ada HW encode</div>
+          <div class="svc-detail">Canto-Bight VM 400 · 192.168.20.86<br>Moonlight game streaming<br>Windows 11 · domain-joined</div>
         </div>
         <div class="svc-box media">
           <div class="svc-name">ES-DE + Emulators</div>
@@ -1289,7 +1309,7 @@
       <div class="svc-row cols-1" style="grid-template-columns:1fr;">
         <div class="svc-box media">
           <div class="svc-name">Storage: Home One /srv/arcade (SMB)</div>
-          <div class="svc-detail">roms · saves · bios · media — Apple TVs on IoT VLAN reach via firewall rules: TCP 47984/47989/48010, UDP 47998-48000/48002</div>
+          <div class="svc-detail">roms · saves · bios · media<br>Moonlight ports: TCP 47984/47989/48010, UDP 47998-48000/48002</div>
         </div>
       </div>
     </div>
@@ -1305,7 +1325,7 @@
       <div class="svc-row cols-1" style="grid-template-columns:1fr;">
         <div class="svc-box network">
           <div class="svc-name">IoT Device Isolation</div>
-          <div class="svc-detail">Apple TVs · Smart devices<br>VLAN 30 · 192.168.30.0/24<br>No unrestricted LAN access</div>
+          <div class="svc-detail">Tapo switches · LG TV<br>VLAN 30 · 192.168.30.0/24<br>No internet except Home Assistant</div>
         </div>
       </div>
     </div>
@@ -1317,19 +1337,19 @@
     <div class="svc-row cols-4">
       <div class="svc-box compute">
         <div class="svc-name">tima.dev</div>
-        <div class="svc-detail">Astro-based portfolio<br>GitHub hosted<br>Interview-ready docs</div>
+        <div class="svc-detail">Astro portfolio on Netlify<br>Self-hosted Umami analytics<br>Interview-ready docs</div>
       </div>
       <div class="svc-box compute">
-        <div class="svc-name">holocron-labs.tima.dev</div>
-        <div class="svc-detail">Ghost CMS blog<br>15+ published posts<br>27 drafted (007-033)</div>
+        <div class="svc-name">tima.dev/blog</div>
+        <div class="svc-detail">Technical blog on Astro<br>Migrated from Ghost<br>Incident and build write-ups</div>
       </div>
       <div class="svc-box compute">
         <div class="svc-name">Homelab Portfolio Repo</div>
         <div class="svc-detail">Alliance-Homelab-Infrastructure<br>SIEM · Zero-Trust · GPU AI<br>Active Directory Lab<br>PROBLEM / IMPL / TRADEOFFS</div>
       </div>
       <div class="svc-box compute">
-        <div class="svc-name">Ghost Theme</div>
-        <div class="svc-detail">holocron-logs-lab-theme<br>25 Star Wars palettes<br>H1 subtitle extraction</div>
+        <div class="svc-name">Technical Writeups</div>
+        <div class="svc-detail">technical-writeups repo<br>15 incident writeups<br>Impact, evidence, verification</div>
       </div>
     </div>
     <div class="svc-row cols-2">
@@ -1339,13 +1359,13 @@
       </div>
       <div class="svc-box obs">
         <div class="svc-name">Roadmap</div>
-        <div class="svc-detail">Proxmox Backup Server<br>Offsite B2/S3 replication<br>Terraform IaC · Grafana alerts<br>Second DC (Node-C)</div>
+        <div class="svc-detail">Azure offsite backup verification<br>Authentik SSO expansion<br>Grafana hub-and-spoke rebuild<br>DFIR VLAN · Ghost Squadron workloads</div>
       </div>
     </div>
   </div>
 
   <!-- NETWORK / VLAN -->
-  <div class="sep"><div class="sep-line"></div><span class="sep-label">Networks — VLANs</span><div class="sep-line"></div></div>
+  <div class="sep"><div class="sep-line"></div><span class="sep-label">Networks: VLANs</span><div class="sep-line"></div></div>
 
   <div class="vlan-row">
     <div class="vlan-box mgmt">
@@ -1376,7 +1396,7 @@
       <div class="vlan-num">VLAN 50</div>
       <div class="vlan-name">Bot-Net / Sec</div>
       <div class="vlan-cidr">192.168.50.0/28</div>
-      <div class="vlan-desc">K-2SO isolation<br>Fulcrum · .10<br>Security sandbox<br>Triple isolation</div>
+      <div class="vlan-desc">Bot-Net segment<br>Fulcrum · .10<br>Console only<br>Isolated</div>
     </div>
     <div class="vlan-box endor">
       <div class="vlan-num">VLAN 60</div>
@@ -1407,8 +1427,8 @@
   <!-- FOOTER -->
   <div class="footer">
     <div class="footer-left">
-      Generated: 2026-04-28 · Ghost Squadron added: 2026-10-19<br>
-      Source: tima.dev · holocron-labs.tima.dev<br>
+      Last updated: 2026-10-20<br>
+      Source: tima.dev · tima.dev/blog<br>
       Repo: Alliance-Homelab-Infrastructure
     </div>
     <div class="footer-right">
